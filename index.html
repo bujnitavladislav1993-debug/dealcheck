@@ -942,7 +942,7 @@ async function analyzeDeal() {
       : `Deal type: ${dealType}${textInput ? '\n\nAdditional info:\n'+textInput : processedBase64 ? '\n\nAnalyze everything visible in the document.' : ''}`;
     userContent.push({ type:'text', text:promptText });
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https:///api/analyze'', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
