@@ -570,14 +570,14 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">⚡ AI · 10+ лет в автобизнесе в США</div>
+  <div class="hero-badge">⚡ AI · 10+ лет опыта в Mercedes-Benz</div>
   <h1 id="hero-title">Проверьте сделку<br>до того как <em>подписать</em></h1>
-  <p id="hero-sub">Загрузите email от дилера, скриншот с телефона или фото бумаги с цифрами — или просто впишите их вручную. AI найдёт скрытые наценки и объяснит каждую цифру.</p>
+  <p id="hero-sub">Загрузите фото котировки или контракта. AI найдёт все красные флаги, скрытые наценки и объяснит каждую цифру простым языком.</p>
 </section>
 
 <!-- TRUST BAR -->
 <div class="trust-bar">
-  <div class="trust-item"><span class="num">10+</span> <span id="t1">лет в автобизнесе в США</span></div>
+  <div class="trust-item"><span class="num">10+</span> <span id="t1">лет в индустрии</span></div>
   <div class="trust-item"><span class="num">$0</span> <span id="t2">скрытых комиссий</span></div>
   <div class="trust-item"><span class="num">2 мин</span> <span id="t3">на анализ сделки</span></div>
   <div class="trust-item"><span class="num">RU/EN</span> <span id="t4">двуязычный</span></div>
@@ -632,8 +632,8 @@
       onclick="document.getElementById('file-input').click()"
       ondragover="handleDrag(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
       <div class="upload-icon">📎</div>
-      <div class="upload-title" id="upload-title">Есть предложение на авто от дилера?</div>
-      <div class="upload-sub" id="upload-sub">Просто загрузи файл сюда или напиши цифры вручную ниже</div>
+      <div class="upload-title" id="upload-title">Загрузить фото или PDF</div>
+      <div class="upload-sub" id="upload-sub">JPG · PNG · HEIC (iPhone) · PDF — любой формат</div>
     </div>
 
     <div class="preview-area" id="preview-area"></div>
@@ -652,7 +652,7 @@
   <!-- LOCKED STATE -->
   <div class="locked-overlay" id="locked-overlay">
     <div class="lock-icon">🔒</div>
-    <p id="locked-text">Оплатите $20 выше — и загружайте ваши цифры или фото от дилера. AI разберёт сделку за 2 минуты.</p>
+    <p id="locked-text">Оплатите $20 выше чтобы загрузить вашу сделку и получить полный AI анализ</p>
   </div>
 </div>
 
@@ -677,26 +677,26 @@ let unlocked = false;
 const T = {
   ru: {
     heroTitle: 'Проверьте сделку<br>до того как <em>подписать</em>',
-    heroSub: 'Загрузите email от дилера, скриншот с телефона или фото бумаги с цифрами — или просто впишите их вручную. AI найдёт скрытые наценки и объяснит каждую цифру.',
-    t1:'лет в автобизнесе в США', t2:'скрытых комиссий', t3:'на анализ сделки', t4:'двуязычный',
+    heroSub: 'Загрузите фото котировки или контракта. AI найдёт все красные флаги, скрытые наценки и объяснит каждую цифру простым языком.',
+    t1:'лет в индустрии', t2:'скрытых комиссий', t3:'на анализ сделки', t4:'двуязычный',
     payTitle: '💳 Разблокировать анализ — $20',
     payNote: 'Одноразовая оплата · Мгновенный доступ · Никаких подписок',
     unlockBanner: '✓ Доступ открыт — загрузите вашу сделку',
     types: { lease:'Лизинг', finance:'Кредит', cash:'Наличные', contract:'Контракт' },
-    uploadTitle: 'Есть предложение на авто от дилера?',
-    uploadSub: 'Просто загрузи файл сюда или напиши цифры вручную ниже',
+    uploadTitle: 'Загрузить фото или PDF',
+    uploadSub: 'JPG · PNG · HEIC (iPhone) · PDF — любой формат',
     orText: 'или введите вручную',
     ph: {
-      lease: 'Пример: платёж $850/мес, первый взнос $3,500, цена машины $72,000, срок 36 мес, пробег 10,000 миль в год...',
-      finance: 'Пример: цена машины $45,000, первый взнос $5,000, ставка 7.9%, срок 72 мес, платёж $620/мес...',
-      cash: 'Пример: цена машины $38,000, дилер добавил защитное покрытие $1,200, регистрация $500, итого $41,200...',
-      contract: 'Вставьте любые цифры из вашего контракта — платёж, сумму финансирования, ставку, срок, доп. продукты...'
+      lease: 'Платёж $850/мес, due at signing $3,500, MSRP $72,000, selling price, money factor, срок, пробег...',
+      finance: 'Selling price, APR, срок кредита, monthly payment, down payment, trade-in...',
+      cash: 'Asking price, out-the-door price, dealer fees, add-ons...',
+      contract: 'Financed amount, APR, term, monthly payment, продукты из finance office...'
     },
     analyzeBtn: 'Проанализировать сделку →',
     analyzing: 'Анализируем...',
     processing: 'Обрабатываем изображение...',
     ready: '✓ Готово к анализу',
-    lockedText: 'Оплатите $20 выше — и загружайте ваши цифры или фото от дилера. AI разберёт сделку за 2 минуты.',
+    lockedText: 'Оплатите $20 выше чтобы загрузить вашу сделку и получить полный AI анализ',
     good: '✓ СДЕЛКА ВЫГЛЯДИТ НОРМАЛЬНО',
     warn: '⚠ ЕСТЬ ВОПРОСЫ',
     danger: '🚩 НАЙДЕНЫ КРАСНЫЕ ФЛАГИ',
