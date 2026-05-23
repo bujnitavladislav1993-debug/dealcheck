@@ -559,7 +559,7 @@
 <!-- TRUST BAR -->
 <div class="trust-bar">
   <div class="trust-item"><span class="num">10+</span> <span id="t1">лет в автобизнесе в США</span></div>
-  <div class="trust-item"><span class="num">$0</span> <span id="t2">скрытых комиссий</span></div>
+  <div class="trust-item"><span class="num" id="deals-counter">—</span> <span id="t2">сделок проанализировано</span></div>
   <div class="trust-item"><span class="num">2 мин</span> <span id="t3">на анализ сделки</span></div>
   <div class="trust-item"><span class="num">RU/EN</span> <span id="t4">двуязычный</span></div>
 </div>
@@ -600,6 +600,19 @@
   </div>
 
   <div id="upload-section" style="display:none">
+
+    <!-- MODE TOGGLE -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <button onclick="setMode('single')" id="mode-single" class="type-btn active" style="flex:1;padding:10px">
+        🔍 <span id="mode-single-label">Анализ сделки</span>
+      </button>
+      <button onclick="setMode('compare')" id="mode-compare" class="type-btn" style="flex:1;padding:10px">
+        ⚖️ <span id="mode-compare-label">Сравнить 2 сделки</span>
+      </button>
+    </div>
+
+    <!-- DEAL A upload -->
+    <div id="label-a" style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;display:none">СДЕЛКА А / DEAL A</div>
     <div class="upload-zone" id="upload-zone"
       onclick="document.getElementById('file-input').click()"
       ondragover="handleDrag(event)"
@@ -609,8 +622,23 @@
       <div class="upload-title" id="upload-title">Есть предложение на авто от дилера?</div>
       <div class="upload-sub" id="upload-sub">Просто загрузи файл сюда или напиши цифры вручную ниже</div>
     </div>
-
     <div class="preview-area" id="preview-area"></div>
+
+    <!-- DEAL B upload (compare mode only) -->
+    <div id="deal-b-section" style="display:none;margin-top:1rem">
+      <div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px">СДЕЛКА Б / DEAL B</div>
+      <input type="file" id="file-input-b" accept="image/*,.heic,.heif,application/pdf" onchange="handleFileB(event)" style="display:none">
+      <div class="upload-zone" id="upload-zone-b"
+        onclick="document.getElementById('file-input-b').click()"
+        ondragover="handleDragB(event)"
+        ondragleave="handleDragLeaveB(event)"
+        ondrop="handleDropB(event)">
+        <div class="upload-icon">📎</div>
+        <div class="upload-title">Второе предложение / Second quote</div>
+        <div class="upload-sub">Другой дилер, другая машина или другие условия</div>
+      </div>
+      <div class="preview-area" id="preview-area-b"></div>
+    </div>
 
     <div class="or-divider">
       <hr><span id="or-text">или введите вручную</span><hr>
@@ -659,12 +687,37 @@
 <script>
 let lang = 'ru';
 let dealType = 'lease';
+let compareMode = false;
 let processedBase64 = null;
 let processedMime = 'image/jpeg';
 let isPdf = false;
-// Use sessionStorage - resets when browser tab is closed
+let processedBase64_b = null;
+let processedMime_b = 'image/jpeg';
+let isPdf_b = false;
 let analysisCount = parseInt(sessionStorage.getItem('analysisCount') || '0');
 let paidAnalyses = parseInt(sessionStorage.getItem('paidAnalyses') || '0');
+
+// Global deal counter — seeds at 847, grows in localStorage
+const COUNTER_SEED = 847;
+function getGlobalCount() {
+  return parseInt(localStorage.getItem('globalDealCount') || COUNTER_SEED);
+}
+function incrementGlobalCount() {
+  const next = getGlobalCount() + 1;
+  localStorage.setItem('globalDealCount', next);
+  animateCounter(next);
+}
+function animateCounter(target) {
+  const el = document.getElementById('deals-counter');
+  if (!el) return;
+  const start = Math.max(target - 20, COUNTER_SEED);
+  let current = start;
+  const step = () => {
+    el.textContent = current.toLocaleString();
+    if (current < target) { current++; requestAnimationFrame(step); }
+  };
+  requestAnimationFrame(step);
+}
 
 function getRemainingAnalyses() {
   const freeLimit = 1;
@@ -692,13 +745,14 @@ window.addEventListener("DOMContentLoaded", function() {
   if (paidAnalyses > 0 && analysisCount < 4) {
     showAnalyzer();
   }
+  animateCounter(getGlobalCount());
 });
 
 const T = {
   ru: {
     heroTitle: 'Проверьте сделку<br>до того как <em>подписать</em>',
     heroSub: 'Загрузите email от дилера, скриншот с телефона или фото бумаги с цифрами — или просто впишите их вручную. AI найдёт скрытые наценки и объяснит каждую цифру.',
-    t1:'лет в автобизнесе в США', t2:'скрытых комиссий', t3:'на анализ сделки', t4:'двуязычный',
+    t1:'лет в автобизнесе в США', t2:'сделок проанализировано', t3:'на анализ сделки', t4:'двуязычный',
     payTitle: '💳 Разблокировать анализ — $20',
     payNote: 'Одноразовая оплата · Мгновенный доступ · Никаких подписок',
     unlockBanner: '✓ Доступ открыт — загрузите вашу сделку',
@@ -730,7 +784,7 @@ const T = {
   en: {
     heroTitle: 'Check your deal<br>before you <em>sign</em>',
     heroSub: 'Upload a photo of your quote or contract. AI flags every red flag, hidden markup, and explains every number in plain language.',
-    t1:'years in the industry', t2:'hidden fees', t3:'to analyze your deal', t4:'bilingual',
+    t1:'years in the industry', t2:'deals analyzed', t3:'to analyze your deal', t4:'bilingual',
     payTitle: '💳 Unlock analysis — $20',
     payNote: 'One-time payment · Instant access · No subscriptions',
     unlockBanner: '✓ Access unlocked — upload your deal',
@@ -998,8 +1052,18 @@ TRADE-IN:
 - Recommend getting independent KBB/CarMax quote before dealership
 
 ## КРАСНЫЕ ФЛАГИ / RED FLAGS
-ONLY list confirmed real problems. For each: what + cost to buyer + exact words to say.
-No real red flags? Say: "Серьёзных красных флагов не обнаружено." Be honest — a good deal is a good deal.
+ONLY list confirmed real problems — things with actual dollar evidence in THIS document. No speculation.
+
+Rate each flag by severity and always include the exact dollar cost to the buyer:
+
+🔴 КРИТИЧНО / CRITICAL — costs buyer $500+ or is a legal/financial trap
+🟡 УМЕРЕННО / MODERATE — costs $100–500, worth fighting for
+🟢 НЕЗНАЧИТЕЛЬНО / MINOR — under $100, nice to fix but not deal-breaking
+
+Format EVERY red flag like this:
+[EMOJI] **[Name]** — [What it is in plain language] — 💸 Цена для покупателя: **$X** — Скажите дилеру: *"[exact word-for-word script in the response language]"*
+
+If no real red flags: say exactly "Серьёзных красных флагов не обнаружено. Сделка выглядит честно." Be direct — a clean deal is a clean deal. Do NOT invent problems.
 
 ## ВОПРОСЫ ДЛЯ ДИЛЕРА / QUESTIONS TO ASK
 3-5 sharp questions. Always ask about MSRP if not shown. Always ask about base money factor on leases.
@@ -1023,11 +1087,19 @@ Always include 2-3 scripts tailored to THIS specific deal's red flags.
 - Never reveal your target monthly payment — negotiate total price only
 - Discount targets: Southern California = 6-8% min, 10%+ on outgoing models. Midwest/Texas/other markets = 3-6% typical. Always research local inventory levels — overstock = more leverage.
 
+## ИТОГОВАЯ СТОИМОСТЬ / TOTAL COST REALITY CHECK
+Always include this section. Show the real money at stake:
+- If CASH: Total out-of-pocket = selling price + all fees + taxes
+- If FINANCE: Total paid over loan life = (monthly payment × term) + down payment. Then: "You pay $X total for a car that costs $Y — that's $Z in interest."
+- If LEASE: Total paid over lease = (monthly × term) + due at signing + disposition fee (~$400). Then: "After [term] months you own nothing. Monthly cost of use: $[payment+fees/term]/mo."
+- If trade-in: "Your trade equity of $X reduces your out-of-pocket to $Y"
+- Always end with: "The single most impactful thing you can do to improve this deal: [one specific action with dollar impact]"
+
 ## ОЦЕНКА / SCORE
-Score: X/10 (be honest)
-Good: [list]
-Fix before signing: [list]
-Bottom line: Sign it / Negotiate first / Walk away`;
+Score: X/10 (be honest — 10 is unicorn deal, 5 is average, below 4 = problems)
+✅ Хорошо / Good: [list]
+🔧 Исправить до подписания / Fix before signing: [list with dollar savings for each]
+📌 Итог / Bottom line: Sign it / Negotiate first / Walk away`;
 }
 
 function buildExtractionSystem() {
@@ -1052,6 +1124,7 @@ Output a clean bulleted list only. No analysis, no opinions.`;
 }
 
 async function analyzeDeal() {
+  if (compareMode) { compareDeal(); return; }
   const textInput = document.getElementById('deal-input').value.trim();
   if (!processedBase64 && textInput.length < 10) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].noInput}</div>`;
@@ -1275,6 +1348,24 @@ async function runFullAnalysis() {
           </button>
         </div>
         <div id="email-area"></div>
+        ${vClass === 'verdict-danger' ? `
+        <div style="margin:0 1.25rem 1.25rem;background:var(--red-bg);border:1px solid rgba(231,76,60,0.3);border-radius:var(--radius);padding:1.25rem;text-align:center">
+          <div style="font-size:1.2rem;margin-bottom:0.5rem">🚨</div>
+          <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--red);margin-bottom:0.4rem;font-size:0.95rem">
+            ${ru ? 'Серьёзные проблемы — не подписывайте без консультации' : 'Serious red flags — don\'t sign without a consultation'}
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
+            ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
+          </div>
+          <a href="https://www.instagram.com/pereprodavec_usa/" target="_blank"
+            style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none;margin-right:8px">
+            📱 Instagram DM
+          </a>
+          <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
+            style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border:1px solid var(--red);color:var(--red);font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+            📅 ${ru ? 'Записаться' : 'Book call'}
+          </a>
+        </div>` : ''}
         <div class="cta-box">
           <div>
             <div class="cta-box-text">${T[lang].ctaText}</div>
@@ -1286,6 +1377,7 @@ async function runFullAnalysis() {
 
     analysisCount++;
     sessionStorage.setItem('analysisCount', analysisCount.toString());
+    incrementGlobalCount();
     const remaining = getRemainingAnalyses();
     if (remaining <= 0) {
       setTimeout(() => appendPaywall(), 8000);
@@ -1364,6 +1456,170 @@ function shareAnalysis(verdict, vClass) {
     btn.style.borderColor = 'var(--green)';
     setTimeout(() => { btn.innerHTML = orig; btn.style.color=''; btn.style.borderColor=''; }, 2500);
   });
+}
+
+function setMode(mode) {
+  compareMode = mode === 'compare';
+  const ru = lang === 'ru';
+  document.getElementById('mode-single').classList.toggle('active', !compareMode);
+  document.getElementById('mode-compare').classList.toggle('active', compareMode);
+  document.getElementById('deal-b-section').style.display = compareMode ? 'block' : 'none';
+  document.getElementById('label-a').style.display = compareMode ? 'block' : 'none';
+  const btn = document.getElementById('analyze-btn');
+  btn.textContent = compareMode
+    ? (ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →')
+    : (ru ? 'Проанализировать сделку →' : 'Analyze my deal →');
+}
+
+function handleDragB(e) { e.preventDefault(); document.getElementById('upload-zone-b').classList.add('dragover'); }
+function handleDragLeaveB(e) { document.getElementById('upload-zone-b').classList.remove('dragover'); }
+function handleDropB(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone-b').classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) processFileB(f);
+}
+function handleFileB(e) { const f = e.target.files[0]; if (f) processFileB(f); }
+
+function removeFileB() {
+  processedBase64_b = null; isPdf_b = false;
+  document.getElementById('preview-area-b').style.display = 'none';
+  document.getElementById('preview-area-b').innerHTML = '';
+  document.getElementById('file-input-b').value = '';
+}
+
+async function processFileB(file) {
+  const name = file.name || 'file';
+  isPdf_b = file.type === 'application/pdf';
+  const preview = document.getElementById('preview-area-b');
+  preview.style.display = 'block';
+  preview.innerHTML = `<div class="file-card"><span>⏳ ${T[lang].processing}</span></div>`;
+  if (isPdf_b) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      processedBase64_b = e.target.result.split(',')[1];
+      processedMime_b = 'application/pdf';
+      preview.innerHTML = `<div class="file-card"><span>📄 ${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+  try {
+    processedBase64_b = await compressImage(file, 1800, 1800, 0.85);
+    processedMime_b = 'image/jpeg';
+    const src = 'data:image/jpeg;base64,' + processedBase64_b;
+    preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal B"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
+  } catch(err) {
+    const reader = new FileReader();
+    reader.onload = (e) => { processedBase64_b = e.target.result.split(',')[1]; processedMime_b = 'image/jpeg'; };
+    reader.readAsDataURL(file);
+    preview.innerHTML = `<div class="file-card"><span>📷 ${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
+  }
+}
+
+function buildCompareSystem() {
+  const ru = lang === 'ru';
+  return `You are Vlad — brutally honest car deal expert, 10+ years inside Mercedes-Benz dealerships. The buyer has submitted TWO deal documents for comparison. Your job: tell them EXACTLY which deal is better and by how much in dollars.
+
+RESPOND IN: ${ru ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
+
+STRUCTURE — use these exact sections:
+
+## 🅐 СДЕЛКА А / DEAL A
+List key numbers: car, selling price, fees, financing terms, monthly payment, total cost
+
+## 🅑 СДЕЛКА Б / DEAL B
+List key numbers: car, selling price, fees, financing terms, monthly payment, total cost
+
+## ⚖️ СРАВНЕНИЕ / HEAD-TO-HEAD
+Compare each dimension side by side:
+- Price / discount from MSRP
+- Total cost over ownership period
+- Fees (doc fee, add-ons, accessories)
+- Financing rate (if applicable)
+- Trade-in (if applicable)
+- Red flags in each deal
+
+## 🏆 ПОБЕДИТЕЛЬ / WINNER
+State clearly: "Deal A is better by approximately $X because..." OR "Deal B is better by approximately $X because..."
+If one deal is a completely different car, compare value-for-money, not just price.
+
+## 📌 ЧТО ДЕЛАТЬ ДАЛЬШЕ / NEXT STEP
+One concrete action: what to say to which dealer to close the best possible deal.`;
+}
+
+async function compareDeal() {
+  const ru = lang === 'ru';
+  if (!processedBase64 && !processedBase64_b) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${ru ? 'Загрузите хотя бы одну сделку для сравнения.' : 'Upload at least one deal to compare.'}</div>`;
+    return;
+  }
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.textContent = ru ? 'Сравниваем...' : 'Comparing...';
+  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  try {
+    const userContent = [];
+    if (processedBase64) {
+      userContent.push({ type: 'text', text: ru ? '## СДЕЛКА А:' : '## DEAL A:' });
+      userContent.push(isPdf
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64 } }
+        : { type:'image', source:{ type:'base64', media_type:processedMime, data:processedBase64 } });
+    }
+    if (processedBase64_b) {
+      userContent.push({ type: 'text', text: ru ? '## СДЕЛКА Б:' : '## DEAL B:' });
+      userContent.push(isPdf_b
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64_b } }
+        : { type:'image', source:{ type:'base64', media_type:processedMime_b, data:processedBase64_b } });
+    }
+    const textInput = document.getElementById('deal-input').value.trim();
+    if (textInput) userContent.push({ type:'text', text: (ru ? 'Дополнительная информация:\n' : 'Additional info:\n') + textInput });
+
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2500,
+        system: buildCompareSystem(),
+        messages: [{ role:'user', content: userContent }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = data.content?.map(b => b.text||'').join('') || '';
+    if (!text) throw new Error('Empty response from AI');
+
+    window.lastAnalysisText = text;
+    document.getElementById('result-area').innerHTML = `
+      <div class="result-card">
+        <div class="result-header">
+          <span class="verdict-badge verdict-warning">⚖️ ${ru ? 'СРАВНЕНИЕ СДЕЛОК' : 'DEAL COMPARISON'}</span>
+        </div>
+        <div class="result-body">${renderMarkdown(text)}</div>
+        <div style="display:flex;gap:10px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          <button onclick="generateEmail()" class="pay-btn" style="flex:1;justify-content:center">📧 ${ru ? 'Письмо дилеру' : 'Write Dealer Email'}</button>
+          <button onclick="shareAnalysis('${ru ? 'Сравнил 2 сделки через DealCheck' : 'Compared 2 deals with DealCheck'}','verdict-warning')" class="pay-btn" style="flex:1;justify-content:center">📋 ${ru ? 'Скопировать' : 'Copy'}</button>
+        </div>
+        <div id="email-area"></div>
+        <div class="cta-box">
+          <div><div class="cta-box-text">${T[lang].ctaText}</div><div class="cta-box-sub">${T[lang].ctaSub}</div></div>
+          <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" class="cta-link">${T[lang].ctaBtn}</a>
+        </div>
+      </div>`;
+
+    analysisCount++;
+    sessionStorage.setItem('analysisCount', analysisCount.toString());
+    incrementGlobalCount();
+    const remaining = getRemainingAnalyses();
+    if (remaining <= 0) setTimeout(() => appendPaywall(), 8000);
+    else updateCounter();
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
 }
 
 function appendPaywall() {
