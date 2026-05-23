@@ -1092,6 +1092,40 @@ function getStickerLinks(make, vin) {
   const links = [];
   if (m === 'FORD' || m === 'LINCOLN') {
     links.push({ label: 'Window Sticker PDF', url: `https://www.windowsticker.forddirect.com/windowsticker.pdf?vin=${vin}` });
+  } else if (m === 'TOYOTA' || m === 'LEXUS') {
+    links.push({ label: 'Window Sticker PDF', url: `https://www.toyota.com/t3Portal/prodpage/getWindowStickerPdf?vin=${vin}` });
+  } else if (m === 'BMW') {
+    links.push({ label: 'Window Sticker', url: `https://www.bmwusa.com/windows-sticker.html#${vin}` });
+  } else if (m === 'CHEVROLET' || m === 'GMC' || m === 'BUICK' || m === 'CADILLAC') {
+    links.push({ label: 'Window Sticker', url: `https://www.chevrolet.com/bypass/pcf/care-cs-owner-center-service/v1/windows-sticker/pdf?vin=${vin}` });
+  } else if (m === 'HONDA' || m === 'ACURA') {
+    links.push({ label: 'Window Sticker', url: `https://www.honda.com/localization/index.cfm?VIN=${vin}` });
+  } else if (m === 'NISSAN' || m === 'INFINITI') {
+    links.push({ label: 'Window Sticker', url: `https://www.nissanusa.com/windowsticker.pdf?vin=${vin}` });
+  } else if (m === 'HYUNDAI') {
+    links.push({ label: 'Window Sticker', url: `https://www.hyundaiusa.com/content/dam/hyundai/us/window-sticker/${vin}.pdf` });
+  } else if (m === 'KIA') {
+    links.push({ label: 'Window Sticker', url: `https://www.kia.com/us/en/window-sticker?vin=${vin}` });
+  } else if (m === 'SUBARU') {
+    links.push({ label: 'Window Sticker', url: `https://www.subaru.com/content/dam/subaruofamerica/images/window-sticker/${vin}.pdf` });
+  } else if (m === 'VOLKSWAGEN') {
+    links.push({ label: 'Window Sticker', url: `https://www.vw.com/en/models.html?vin=${vin}` });
+  } else if (m === 'JEEP' || m === 'DODGE' || m === 'RAM' || m === 'CHRYSLER') {
+    links.push({ label: 'Window Sticker', url: `https://www.jeep.com/windowsticker/getWindowStickerPdf.do?vin=${vin}` });
+  } else if (m === 'MERCEDES' || m === 'MERCEDES-BENZ') {
+    links.push({ label: 'Window Sticker', url: `https://www.mbusa.com/content/dam/mb-nafta/us/window-sticker/${vin}.pdf` });
+  } else if (m === 'AUDI') {
+    links.push({ label: 'Window Sticker', url: `https://www.audiusa.com/content/dam/audiusa/window-sticker/${vin}.pdf` });
+  } else if (m === 'VOLVO') {
+    links.push({ label: 'Window Sticker', url: `https://www.volvocars.com/us/window-sticker?vin=${vin}` });
+  } else if (m === 'TESLA') {
+    links.push({ label: 'Window Sticker', url: `https://www.tesla.com/window-sticker/${vin}` });
+  } else if (m === 'MAZDA') {
+    links.push({ label: 'Window Sticker', url: `https://www.mazdausa.com/content/dam/mazdausa/us/window-sticker/${vin}.pdf` });
+  } else if (m === 'GENESIS') {
+    links.push({ label: 'Window Sticker', url: `https://www.genesis.com/us/en/window-sticker.html?vin=${vin}` });
+  } else if (m === 'RIVIAN') {
+    links.push({ label: 'Window Sticker', url: `https://rivian.com/support/article/where-can-i-find-my-window-sticker` });
   }
   links.push({ label: 'AutoiPacket', url: `https://www.autoipacket.com/window_sticker/${vin}` });
   links.push({ label: 'Google Search', url: `https://www.google.com/search?q=%22window+sticker%22+%22${vin}%22` });
