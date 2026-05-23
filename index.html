@@ -913,9 +913,23 @@ function buildSystem() {
     contract: lang==='ru' ? 'финальный контракт' : 'signed contract'
   }[dealType] || dealType;
 
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate() - dayOfMonth;
+  const month = now.getMonth(); // 0-indexed
+  const isEndOfMonth = daysLeftInMonth <= 5;
+  const isEndOfQuarter = (month === 2 || month === 5 || month === 8 || month === 11) && daysLeftInMonth <= 10;
+  const timingNote = isEndOfQuarter
+    ? `TODAY IS END OF QUARTER (${daysLeftInMonth} days left). Dealers MUST hit quarterly targets. Maximum buyer leverage — push hard.`
+    : isEndOfMonth
+    ? `TODAY IS END OF MONTH (${daysLeftInMonth} days left). Dealers need units to hit monthly quota. Good leverage window — use it.`
+    : `Today is the ${dayOfMonth}th. End of month is in ${daysLeftInMonth} days. End of month and end of quarter are the best times to negotiate.`;
+
   return `You are Vlad — a brutally honest car deal expert with 10+ years inside Mercedes-Benz dealerships in Southern California. You analyze deals exclusively for the BUYER.
 
 RESPOND IN: ${lang === 'ru' ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
+
+MARKET TIMING: ${timingNote} Always mention this in the negotiation section.
 
 ═══════════════════════════════════════
 STEP 1 — ALWAYS START HERE: CONFIRM NUMBERS
@@ -990,11 +1004,23 @@ No real red flags? Say: "Серьёзных красных флагов не о�
 ## ВОПРОСЫ ДЛЯ ДИЛЕРА / QUESTIONS TO ASK
 3-5 sharp questions. Always ask about MSRP if not shown. Always ask about base money factor on leases.
 
-## СТРАТЕГИЯ / NEGOTIATION
-- Negotiate BEFORE entering the dealership — email/phone
-- Get 2-3 competing quotes
-- Negotiate price first, trade-in separately
-- Never reveal target monthly payment
+## СТРАТЕГИЯ / NEGOTIATION SCRIPTS
+Give word-for-word scripts the buyer can say or text the dealer. Be specific to THIS deal's numbers.
+
+Examples of scripts to adapt:
+- On price: "I've gotten quotes from [2 other dealers]. To earn my business today, I need the selling price at $[X]. Can you do that?"
+- On trade-in: "I have a CarMax offer for $[X] on my trade. Can you match or beat it?"
+- On money factor/APR: "What is the base buy rate from the bank, and how much are you marking it up?"
+- On fees: "I'd like to remove [specific fee] from the contract. That's not something I agreed to."
+- On accessories: "I didn't request those accessories. Please remove them or reduce the selling price by that amount."
+- On timing: "I'm ready to sign today if we can agree on price. Otherwise I'll come back end of month."
+
+Always include 2-3 scripts tailored to THIS specific deal's red flags.
+
+- Negotiate BEFORE entering the dealership — email or phone only
+- Get 2-3 competing quotes from other dealers first
+- Negotiate selling price FIRST, trade-in completely separately
+- Never reveal your target monthly payment — negotiate total price only
 - Discount targets: Southern California = 6-8% min, 10%+ on outgoing models. Midwest/Texas/other markets = 3-6% typical. Always research local inventory levels — overstock = more leverage.
 
 ## ОЦЕНКА / SCORE
@@ -1225,17 +1251,30 @@ async function runFullAnalysis() {
     const text = data.content?.map(b => b.text||'').join('') || '';
     if (!text) throw new Error('Empty response from AI');
 
+    window.lastAnalysisText = text;
+    window.lastConfirmedData = confirmed;
+
     const up = text.toUpperCase();
     let vClass = 'verdict-warning', vText = T[lang].warn;
     if (up.includes('ХОРОШО') || up.includes('LOOKS GOOD') || up.includes('ВЫГЛЯДИТ НОРМАЛЬНО') || up.includes('REASONABLE')) { vClass='verdict-good'; vText=T[lang].good; }
     if (up.includes('КРАСНЫЕ ФЛАГИ') || up.includes('RED FLAGS') || up.includes('СТОП') || up.includes('WALK AWAY')) { vClass='verdict-danger'; vText=T[lang].danger; }
 
+    const ru = lang === 'ru';
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
         <div class="result-header">
           <span class="verdict-badge ${vClass}">${vText}</span>
         </div>
         <div class="result-body">${renderMarkdown(text)}</div>
+        <div style="display:flex;gap:10px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          <button onclick="generateEmail()" class="pay-btn" style="flex:1;justify-content:center;gap:8px">
+            📧 ${ru ? 'Письмо дилеру' : 'Write Dealer Email'}
+          </button>
+          <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}')" class="pay-btn" style="flex:1;justify-content:center;gap:8px">
+            📋 ${ru ? 'Скопировать' : 'Copy Summary'}
+          </button>
+        </div>
+        <div id="email-area"></div>
         <div class="cta-box">
           <div>
             <div class="cta-box-text">${T[lang].ctaText}</div>
@@ -1256,6 +1295,75 @@ async function runFullAnalysis() {
   } catch(err) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
   }
+}
+
+async function generateEmail() {
+  const ru = lang === 'ru';
+  const emailArea = document.getElementById('email-area');
+  if (!emailArea) return;
+  emailArea.innerHTML = `<div style="text-align:center;padding:1.5rem"><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: ru
+          ? 'Ты пишешь профессиональные переговорные письма от покупателя автомобиля дилеру. Только текст письма, никаких пояснений. Письмо должно быть вежливым, конкретным (используй реальные цифры из анализа), уверенным. Максимум 180 слов. Пиши на русском.'
+          : 'You write professional negotiation emails from car buyers to dealers. Return only the email text, no explanations. Be polite, specific (use real numbers from the analysis), confident, and end with a clear ask. Max 180 words.',
+        messages: [{ role: 'user', content: ru
+          ? `На основе этого анализа сделки напиши письмо дилеру с конкретными просьбами об улучшении условий:\n\n${window.lastAnalysisText || window.lastConfirmedData}`
+          : `Based on this deal analysis, write a negotiation email to the dealer requesting specific improvements:\n\n${window.lastAnalysisText || window.lastConfirmedData}`
+        }]
+      })
+    });
+    const d = await resp.json();
+    const email = d.content?.map(b => b.text||'').join('') || '';
+    if (!email) throw new Error('Empty response');
+    window.lastEmailText = email;
+
+    emailArea.innerHTML = `
+      <div style="margin:0 1.25rem 1.25rem;background:var(--surface2);border:1px solid var(--accent-border);border-radius:var(--radius);padding:1.25rem">
+        <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--accent);margin-bottom:0.75rem;font-size:0.85rem;letter-spacing:0.05em">
+          📧 ${ru ? 'ГОТОВОЕ ПИСЬМО ДИЛЕРУ' : 'DEALER NEGOTIATION EMAIL'}
+        </div>
+        <div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.8;margin-bottom:1rem">${email.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        <button onclick="copyEmail(this)" style="padding:8px 18px;border-radius:var(--radius);border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
+          📋 ${ru ? 'Скопировать письмо' : 'Copy email'}
+        </button>
+      </div>`;
+  } catch(err) {
+    emailArea.innerHTML = `<div class="error-msg" style="margin:0 1.25rem 1rem">${err.message}</div>`;
+  }
+}
+
+function copyEmail(btn) {
+  navigator.clipboard.writeText(window.lastEmailText || '').then(() => {
+    const orig = btn.textContent;
+    btn.textContent = lang === 'ru' ? '✓ Скопировано!' : '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+function shareAnalysis(verdict, vClass) {
+  const ru = lang === 'ru';
+  const scoreMatch = (window.lastAnalysisText || '').match(/(\d+)\/10/);
+  const score = scoreMatch ? scoreMatch[1] + '/10' : '';
+  const emoji = vClass === 'verdict-good' ? '✅' : vClass === 'verdict-danger' ? '🚩' : '⚠️';
+  const text = ru
+    ? `${emoji} Проверил сделку через DealCheck by Vlad${score ? ' — Оценка: ' + score : ''}\n\n${verdict}\n\nПроверь свою сделку: dealcheck-ashen.vercel.app\n@pereprodavec_usa`
+    : `${emoji} Just had my car deal analyzed by DealCheck by Vlad${score ? ' — Score: ' + score : ''}\n\n${verdict}\n\nCheck your deal: dealcheck-ashen.vercel.app`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const orig = btn.innerHTML;
+    btn.innerHTML = ru ? '✓ Скопировано!' : '✓ Copied!';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color=''; btn.style.borderColor=''; }, 2500);
+  });
 }
 
 function appendPaywall() {
