@@ -932,19 +932,21 @@ WHY THIS IS CRITICAL: Documents are often photographed at an angle or are blurry
 ═══════════════════════════════════════
 STEP 2 — IDENTIFY LOCATION & DEAL TYPE
 ═══════════════════════════════════════
-DEALER STATE: Read the dealer's address from the document. Apply that state's rules.
-BUYER STATE: Read buyer's address if shown.
+DEALER STATE: Find the dealer's address on the document. Read the state.
+⚠️ CRITICAL STATE RULE: Apply ONLY the rules for the state shown on the dealer's address. If the dealer is in Illinois — use Illinois rules. If Texas — use Texas rules. NEVER mention California rules unless the dealer address explicitly shows CA or a California city. Mentioning the wrong state's rules destroys user trust.
+
+BUYER STATE: Read buyer's address if shown. Note if buyer is from a different state than dealer.
 DEAL TYPE: Determine from the numbers — do NOT rely on user's selection.
 - Lease: has money factor + residual + monthly payment
-- Finance: has APR + loan term + monthly payment  
+- Finance: has APR + loan term + monthly payment
 - Cash: lump sum purchase, no financing
 
-DOC FEE BY STATE:
+DOC FEE BY STATE (apply only the dealer's state):
 - California: max $85 by law. Above $85 = red flag
-- Illinois: not regulated, $150-500 is normal, above $600 = question it
-- Texas: not regulated, $100-300 typical
+- Illinois: not regulated, $150-500 is normal, above $600 = worth questioning
+- Texas: not regulated, $100-300 typical, above $500 = question it
 - Florida: not regulated, up to $1,000 seen
-- Other states: note it but don't apply wrong state rules
+- Other states: research the norm for that state, do not assume California rules
 
 ═══════════════════════════════════════
 STEP 3 — FULL ANALYSIS
@@ -993,7 +995,7 @@ No real red flags? Say: "Серьёзных красных флагов не о�
 - Get 2-3 competing quotes
 - Negotiate price first, trade-in separately
 - Never reveal target monthly payment
-- Discount targets: CA competitive market 6-8% min, 10%+ on outgoing models; other markets vary
+- Discount targets: Southern California = 6-8% min, 10%+ on outgoing models. Midwest/Texas/other markets = 3-6% typical. Always research local inventory levels — overstock = more leverage.
 
 ## ОЦЕНКА / SCORE
 Score: X/10 (be honest)
@@ -1084,11 +1086,15 @@ function extractMake(text) {
   return makes.find(m => text.toUpperCase().includes(m)) || null;
 }
 
-function getStickerUrl(make, vin) {
-  if (!vin) return null;
+function getStickerLinks(make, vin) {
+  if (!vin) return [];
   const m = (make || '').toUpperCase();
-  if (m === 'TOYOTA' || m === 'LEXUS') return `https://www.toyota.com/configurator/api/lexicon/models/windowsticker/pdf?vin=${vin}`;
-  return null;
+  const links = [];
+  if (m === 'TOYOTA' || m === 'LEXUS') {
+    links.push({ label: 'AutoiPacket', url: `https://www.autoipacket.com/window_sticker/${vin}` });
+  }
+  links.push({ label: 'Google Window Sticker', url: `https://www.google.com/search?q=%22window+sticker%22+%22${vin}%22` });
+  return links;
 }
 
 async function lookupVIN(vin) {
@@ -1106,6 +1112,7 @@ async function showConfirmationStep(extractedText) {
   const safe = extractedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const vin = extractVIN(extractedText);
   const make = extractMake(extractedText);
+  const stickerLinks = getStickerLinks(make, vin);
 
   document.getElementById('result-area').innerHTML = `
     <div class="result-card" style="margin-top:1.5rem">
@@ -1140,16 +1147,15 @@ async function showConfirmationStep(extractedText) {
 
   if (vin) {
     const vinData = await lookupVIN(vin);
-    const stickerUrl = getStickerUrl(vinData?.make || make, vin);
+    const links = getStickerLinks(vinData?.make || make, vin);
     const statusEl = document.getElementById('vin-lookup-status');
     if (!statusEl) return;
+    const linksHtml = links.map(l => `<a href="${l.url}" target="_blank" style="color:var(--accent)">📄 ${l.label}</a>`).join(' · ');
     if (vinData) {
       statusEl.innerHTML = `<span style="color:var(--green)">✓ ${vinData.year} ${vinData.make} ${vinData.model}${vinData.trim ? ' ' + vinData.trim : ''}</span>`
-        + (stickerUrl ? ` · <a href="${stickerUrl}" target="_blank" style="color:var(--accent)">${ru ? '📄 Window Sticker' : '📄 Window Sticker'}</a>` : '');
+        + (linksHtml ? ' · ' + linksHtml : '');
     } else {
-      statusEl.innerHTML = stickerUrl
-        ? `<a href="${stickerUrl}" target="_blank" style="color:var(--accent)">📄 ${ru ? 'Открыть Window Sticker' : 'Open Window Sticker'}</a>`
-        : `<span style="color:var(--text-dim)">${ru ? 'VIN не найден в базе NHTSA' : 'VIN not found in NHTSA database'}</span>`;
+      statusEl.innerHTML = linksHtml || `<span style="color:var(--text-dim)">${ru ? 'VIN не найден в базе NHTSA' : 'VIN not found in NHTSA database'}</span>`;
     }
   }
 }
@@ -1173,7 +1179,7 @@ async function runFullAnalysis() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1200,
+        max_tokens: 2500,
         system: buildSystem(),
         messages: [{ role:'user', content: userContent }]
       })
