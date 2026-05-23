@@ -1090,10 +1090,11 @@ function getStickerLinks(make, vin) {
   if (!vin) return [];
   const m = (make || '').toUpperCase();
   const links = [];
-  if (m === 'TOYOTA' || m === 'LEXUS') {
-    links.push({ label: 'AutoiPacket', url: `https://www.autoipacket.com/window_sticker/${vin}` });
+  if (m === 'FORD' || m === 'LINCOLN') {
+    links.push({ label: 'Window Sticker PDF', url: `https://www.windowsticker.forddirect.com/windowsticker.pdf?vin=${vin}` });
   }
-  links.push({ label: 'Google Window Sticker', url: `https://www.google.com/search?q=%22window+sticker%22+%22${vin}%22` });
+  links.push({ label: 'AutoiPacket', url: `https://www.autoipacket.com/window_sticker/${vin}` });
+  links.push({ label: 'Google Search', url: `https://www.google.com/search?q=%22window+sticker%22+%22${vin}%22` });
   return links;
 }
 
