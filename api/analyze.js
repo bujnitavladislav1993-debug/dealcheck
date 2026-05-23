@@ -4,13 +4,13 @@ export default async function handler(req, res) {
   }
 
   // ── IP Rate Limiting (Upstash Redis) ────────────────────────────────────────
-  // Each full analysis = 2 API calls (extraction + full analysis).
-  // Free limit: 1 analysis (2 calls) per IP per 72 hours.
-  // Paid users bypass this on the client side via sessionStorage; the cap is
-  // intentionally tight to stop browser/device hopping on free tier.
+  // Two-step flow: extraction call (max_tokens ≤ 500) + full analysis call.
+  // We only count the FULL analysis call so the limit of 1 means exactly 1 free analysis.
+  // Extraction calls are never counted — blocking them mid-flow would break the UX.
   // If Upstash env vars are absent the check is skipped (fail-open / backwards compat).
-  const RATE_LIMIT    = 2;           // max API calls per window (= 1 full analysis)
-  const WINDOW_SECS   = 72 * 3600;   // 72 hours
+  const RATE_LIMIT    = 1;           // 1 free full analysis per IP
+  const WINDOW_SECS   = 72 * 3600;   // 72-hour window
+  const isFullAnalysis = (req.body?.max_tokens || 0) > 500;
 
   const ip = (
     req.headers['x-forwarded-for'] ||
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     'unknown'
   ).split(',')[0].trim();
 
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  if (isFullAnalysis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     try {
       const base  = process.env.UPSTASH_REDIS_REST_URL;
       const token = process.env.UPSTASH_REDIS_REST_TOKEN;
