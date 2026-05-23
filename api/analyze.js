@@ -39,9 +39,9 @@ export default async function handler(req, res) {
         return res.status(429).json({
           error: {
             message:
-              'Вы превысили лимит бесплатных проверок на этот час. ' +
-              'Попробуйте снова через час или напишите @pereprodavec_usa в Instagram для персональной консультации. ' +
-              '(Rate limit: too many requests from your IP — try again in an hour.)'
+              'Вы уже использовали бесплатный анализ. ' +
+              'Попробуйте снова через 72 часа или напишите @pereprodavec_usa в Instagram для персональной консультации. ' +
+              '(Rate limit: 1 free analysis per IP per 72 hours.)'
           }
         });
       }
