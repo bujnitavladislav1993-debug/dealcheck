@@ -533,6 +533,60 @@
     .deal-types { grid-template-columns: repeat(2, 1fr); }
     .cta-box { flex-direction: column; text-align: center; }
   }
+
+  /* ── PRINT / PDF REPORT ───────────────────────────────────── */
+  .print-header { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #result-area, #result-area * { visibility: visible; }
+    #result-area {
+      position: absolute; left: 0; top: 0;
+      width: 100%; padding: 2rem; box-sizing: border-box;
+    }
+    .pay-btn, button, .cta-box, .urgency-cta { display: none !important; visibility: hidden !important; }
+    .print-header {
+      display: block !important; visibility: visible !important;
+      margin-bottom: 1.25rem; padding-bottom: 1rem;
+      border-bottom: 2px solid #333; color: #000;
+    }
+    .result-card { box-shadow: none !important; border: 1px solid #ddd !important; background: #fff !important; color: #000 !important; }
+    .result-body * { color: #000 !important; }
+    .verdict-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  /* ── EMAIL CAPTURE MODAL ──────────────────────────────────── */
+  .email-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(6px); z-index: 2000;
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+    animation: fadeIn 0.2s ease;
+  }
+  .email-modal-box {
+    background: var(--surface); border: 1px solid var(--accent-border);
+    border-radius: var(--radius-lg); padding: 2rem; max-width: 380px;
+    width: 100%; text-align: center;
+    animation: slideUp 0.25s ease;
+  }
+  .email-modal-box input[type="email"] {
+    width: 100%; padding: 12px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif;
+    box-sizing: border-box; margin-bottom: 0.75rem; outline: none;
+    transition: border-color 0.15s;
+  }
+  .email-modal-box input[type="email"]:focus { border-color: var(--accent); }
+  @keyframes slideUp {
+    from { transform: translateY(18px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* ── REF BONUS BANNER ─────────────────────────────────────── */
+  .ref-bonus-banner {
+    background: var(--accent-dim); border: 1px solid var(--accent-border);
+    border-radius: var(--radius); padding: 0.75rem 1rem;
+    font-size: 13px; color: var(--accent); text-align: center;
+    margin: 0 0 1rem; animation: slideUp 0.3s ease;
+  }
 </style>
 </head>
 <body>
@@ -697,6 +751,12 @@ let isPdf_b = false;
 let analysisCount = parseInt(sessionStorage.getItem('analysisCount') || '0');
 let paidAnalyses = parseInt(sessionStorage.getItem('paidAnalyses') || '0');
 
+// Referral bonus — visiting with ?ref=CODE gives 1 extra free analysis this session
+if (new URLSearchParams(window.location.search).get('ref')) {
+  sessionStorage.setItem('refBonus', '1');
+}
+let refBonus = parseInt(sessionStorage.getItem('refBonus') || '0');
+
 // Global deal counter — seeds at 847, grows in localStorage
 const COUNTER_SEED = 847;
 function getGlobalCount() {
@@ -720,14 +780,14 @@ function animateCounter(target) {
 }
 
 function getRemainingAnalyses() {
-  const freeLimit = 1;
+  const freeLimit = 1 + refBonus;
   const paidLimit = paidAnalyses > 0 ? 3 : 0;
   return (freeLimit + paidLimit) - analysisCount;
 }
 
 function isUnlocked() {
-  if (paidAnalyses > 0) return analysisCount < 4;
-  return analysisCount < 1;
+  if (paidAnalyses > 0) return analysisCount < (4 + refBonus);
+  return analysisCount < (1 + refBonus);
 }
 
 // Auto-unlock if returning from Stripe payment
@@ -746,6 +806,18 @@ window.addEventListener("DOMContentLoaded", function() {
     showAnalyzer();
   }
   animateCounter(getGlobalCount());
+
+  // Show referral bonus banner if they arrived via a ref link
+  if (refBonus && new URLSearchParams(window.location.search).get('ref')) {
+    const ru = lang === 'ru';
+    const banner = document.createElement('div');
+    banner.className = 'ref-bonus-banner';
+    banner.innerHTML = ru
+      ? '🎁 Друг подарил вам дополнительный бесплатный анализ! Загружайте вашу сделку.'
+      : '🎁 A friend gifted you 1 extra free analysis! Upload your deal below.';
+    const paySection = document.getElementById('payment-section');
+    if (paySection) paySection.parentNode.insertBefore(banner, paySection.nextSibling);
+  }
 });
 
 const T = {
@@ -1125,6 +1197,11 @@ Output a clean bulleted list only. No analysis, no opinions.`;
 
 async function analyzeDeal() {
   if (compareMode) { compareDeal(); return; }
+  // Email capture — show once; skipping is fine
+  if (!localStorage.getItem('capturedEmail')) {
+    showEmailCapture(() => analyzeDeal());
+    return;
+  }
   const textInput = document.getElementById('deal-input').value.trim();
   if (!processedBase64 && textInput.length < 10) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].noInput}</div>`;
@@ -1335,16 +1412,26 @@ async function runFullAnalysis() {
     const ru = lang === 'ru';
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
+        <div class="print-header" style="display:none">
+          <strong style="font-size:1.1rem">DealCheck by Vlad</strong> &nbsp;·&nbsp; dealcheck-ashen.vercel.app<br>
+          <span style="font-size:12px;color:#555">@pereprodavec_usa &nbsp;·&nbsp; calendly.com/cars_with_vlad &nbsp;·&nbsp; ${new Date().toLocaleDateString()}</span>
+        </div>
         <div class="result-header">
           <span class="verdict-badge ${vClass}">${vText}</span>
         </div>
         <div class="result-body">${renderMarkdown(text)}</div>
-        <div style="display:flex;gap:10px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
-          <button onclick="generateEmail()" class="pay-btn" style="flex:1;justify-content:center;gap:8px">
-            📧 ${ru ? 'Письмо дилеру' : 'Write Dealer Email'}
+        <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
+            📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
           </button>
-          <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}')" class="pay-btn" style="flex:1;justify-content:center;gap:8px">
-            📋 ${ru ? 'Скопировать' : 'Copy Summary'}
+          <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+            📄 ${ru ? 'Скачать PDF' : 'Download PDF'}
+          </button>
+          <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}')" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+            📋 ${ru ? 'Скопировать' : 'Copy'}
+          </button>
+          <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px;border-color:var(--accent);color:var(--accent)">
+            🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}
           </button>
         </div>
         <div id="email-area"></div>
@@ -1620,6 +1707,100 @@ async function compareDeal() {
   }
   btn.disabled = false;
   btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
+}
+
+// ── PDF / PRINT ───────────────────────────────────────────────────────────────
+function downloadReport() {
+  window.print();
+}
+
+// ── EMAIL CAPTURE ─────────────────────────────────────────────────────────────
+function showEmailCapture(onDone) {
+  const ru = lang === 'ru';
+  const modal = document.createElement('div');
+  modal.id = 'email-modal';
+  modal.className = 'email-modal-overlay';
+  modal.innerHTML = `
+    <div class="email-modal-box">
+      <div style="font-size:2.2rem;margin-bottom:0.6rem">📩</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:0.4rem;color:var(--text)">
+        ${ru ? 'Куда отправить результат?' : 'Where should we send results?'}
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.5">
+        ${ru ? 'Оставьте email — пришлём анализ и советы по торгу с дилером.' : 'Leave your email — we\'ll send your analysis and dealer negotiation tips.'}
+      </div>
+      <input type="email" id="email-capture-input"
+        placeholder="${ru ? 'ваш@email.com' : 'your@email.com'}"
+        onkeydown="if(event.key==='Enter')submitCapturedEmail()">
+      <button onclick="submitCapturedEmail()"
+        style="width:100%;padding:13px;border-radius:var(--radius);border:none;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:0.6rem">
+        ${ru ? 'Получить анализ →' : 'Get my analysis →'}
+      </button>
+      <button onclick="skipEmailCapture()"
+        style="width:100%;padding:9px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif">
+        ${ru ? 'Продолжить без email' : 'Continue without email'}
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+  window._emailCaptureCallback = onDone;
+  setTimeout(() => { const i = document.getElementById('email-capture-input'); if(i) i.focus(); }, 120);
+}
+
+async function submitCapturedEmail() {
+  const input = document.getElementById('email-capture-input');
+  const email = (input?.value || '').trim();
+  if (email && email.includes('@')) {
+    localStorage.setItem('capturedEmail', email);
+    try {
+      await fetch('/api/collect-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, ref: new URLSearchParams(window.location.search).get('ref') || null })
+      });
+    } catch(e) { /* fail silently — never block the user */ }
+  }
+  closeEmailModal();
+}
+
+function skipEmailCapture() {
+  localStorage.setItem('capturedEmail', 'skipped');
+  closeEmailModal();
+}
+
+function closeEmailModal() {
+  const m = document.getElementById('email-modal');
+  if (m) m.remove();
+  if (window._emailCaptureCallback) {
+    const cb = window._emailCaptureCallback;
+    window._emailCaptureCallback = null;
+    cb();
+  }
+}
+
+// ── REFERRAL ──────────────────────────────────────────────────────────────────
+function getRefCode() {
+  let code = localStorage.getItem('refCode');
+  if (!code) {
+    code = Math.random().toString(36).substring(2, 9).toUpperCase();
+    localStorage.setItem('refCode', code);
+  }
+  return code;
+}
+
+function shareWithRef(btn) {
+  const ru = lang === 'ru';
+  const code = getRefCode();
+  const url  = `https://dealcheck-ashen.vercel.app?ref=${code}`;
+  const text = ru
+    ? `🚗 Проверяй автосделки с AI — бесплатно!\n${url}\n\nПо моей ссылке получишь бонусный анализ 🎁\n@pereprodavec_usa`
+    : `🚗 Check your car deal with AI — free!\n${url}\n\nUse my link for a bonus free analysis 🎁\n@pereprodavec_usa`;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = ru ? '✓ Ссылка скопирована!' : '✓ Link copied!';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#000';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 2500);
+  });
 }
 
 function appendPaywall() {
