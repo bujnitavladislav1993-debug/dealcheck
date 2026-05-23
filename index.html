@@ -1002,6 +1002,27 @@ Fix before signing: [list]
 Bottom line: Sign it / Negotiate first / Walk away`;
 }
 
+function buildExtractionSystem() {
+  return `You are a document data extractor. Read this car deal document and list ALL key data.
+
+RESPOND IN: ${lang === 'ru' ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
+
+Extract and list every piece of data you see:
+- Vehicle: year, make, model, trim — copy LETTER BY LETTER exactly as printed on the document
+- Stock # / VIN
+- Selling Price / Sale Price
+- MSRP (if shown)
+- Trade-in: year, make, model, mileage, allowance, payoff
+- All fees individually (doc fee, registration, each tax line)
+- Financing: down payment, APR, term, monthly payment
+- Money Factor, Residual % (if lease)
+- Any other dollar amounts or terms
+
+CRITICAL: Copy the vehicle model name EXACTLY as it appears — letter by letter. If document shows "TX" write "TX". If it shows "RX" write "RX". Never auto-correct or assume the model.
+
+Output a clean bulleted list only. No analysis, no opinions.`;
+}
+
 async function analyzeDeal() {
   const textInput = document.getElementById('deal-input').value.trim();
   if (!processedBase64 && textInput.length < 10) {
@@ -1011,12 +1032,11 @@ async function analyzeDeal() {
 
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
-  btn.textContent = T[lang].analyzing;
+  btn.textContent = lang === 'ru' ? 'Читаем документ...' : 'Reading document...';
   document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
 
   try {
     let userContent = [];
-
     if (processedBase64) {
       if (isPdf) {
         userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64 } });
@@ -1024,11 +1044,65 @@ async function analyzeDeal() {
         userContent.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:processedBase64 } });
       }
     }
+    const promptText = lang === 'ru'
+      ? `Тип сделки: ${dealType}${textInput ? '\n\nДоп. информация:\n'+textInput : processedBase64 ? '\n\nИзвлеки все данные из документа.' : ''}`
+      : `Deal type: ${dealType}${textInput ? '\n\nUser notes:\n'+textInput : processedBase64 ? '\n\nExtract all data from this document.' : ''}`;
+    userContent.push({ type:'text', text: promptText });
 
-    const promptText = lang==='ru'
-      ? `Тип сделки: ${dealType}${textInput ? '\n\nДополнительная информация:\n'+textInput : processedBase64 ? '\n\nПроанализируй всё что видишь в документе.' : ''}`
-      : `Deal type: ${dealType}${textInput ? '\n\nAdditional info:\n'+textInput : processedBase64 ? '\n\nAnalyze everything visible in the document.' : ''}`;
-    userContent.push({ type:'text', text:promptText });
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: buildExtractionSystem(),
+        messages: [{ role:'user', content: userContent }]
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const extracted = data.content?.map(b => b.text||'').join('') || '';
+    if (!extracted) throw new Error('Empty response from AI');
+
+    showConfirmationStep(extracted);
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = T[lang].analyzeBtn;
+}
+
+function showConfirmationStep(extractedText) {
+  const ru = lang === 'ru';
+  const safe = extractedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card" style="margin-top:1.5rem">
+      <div class="result-header">
+        <span class="verdict-badge verdict-warning">📋 ${ru ? 'ПРОВЕРЬТЕ ЦИФРЫ' : 'CONFIRM NUMBERS'}</span>
+      </div>
+      <div class="result-body">
+        <p style="margin-bottom:0.75rem;color:var(--text);font-weight:500">${ru
+          ? 'AI прочитал эти данные из документа. <strong>Исправьте всё что неверно</strong> — особенно модель авто и цену — затем нажмите анализ:'
+          : 'AI read these numbers from your document. <strong>Fix anything wrong</strong> — especially car model and price — then click analyze:'}</p>
+        <textarea id="confirmed-numbers" style="min-height:200px;font-size:13px;margin-bottom:1rem">${safe}</textarea>
+        <button class="analyze-btn" onclick="runFullAnalysis()">${ru ? 'Всё верно — запустить анализ →' : 'Confirmed — run full analysis →'}</button>
+      </div>
+    </div>`;
+}
+
+async function runFullAnalysis() {
+  const confirmed = document.getElementById('confirmed-numbers').value.trim();
+  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  try {
+    const userContent = [{
+      type: 'text',
+      text: lang === 'ru'
+        ? `Тип сделки: ${dealType}\n\nПользователь подтвердил следующие данные из документа. Используй ТОЛЬКО эти данные для анализа:\n\n${confirmed}`
+        : `Deal type: ${dealType}\n\nUser confirmed these numbers from the document. Use ONLY these for analysis:\n\n${confirmed}`
+    }];
 
     const resp = await fetch('/api/analyze', {
       method: 'POST',
@@ -1037,7 +1111,7 @@ async function analyzeDeal() {
         model: 'claude-sonnet-4-6',
         max_tokens: 1200,
         system: buildSystem(),
-        messages: [{ role:'user', content:userContent }]
+        messages: [{ role:'user', content: userContent }]
       })
     });
 
@@ -1046,10 +1120,10 @@ async function analyzeDeal() {
     const text = data.content?.map(b => b.text||'').join('') || '';
     if (!text) throw new Error('Empty response from AI');
 
-    let vClass = 'verdict-warning', vText = T[lang].warn;
     const up = text.toUpperCase();
-    if (up.includes('ХОРОШО') || up.includes('LOOKS GOOD')) { vClass='verdict-good'; vText=T[lang].good; }
-    if (up.includes('КРАСНЫЕ ФЛАГИ') || up.includes('RED FLAGS FOUND')) { vClass='verdict-danger'; vText=T[lang].danger; }
+    let vClass = 'verdict-warning', vText = T[lang].warn;
+    if (up.includes('ХОРОШО') || up.includes('LOOKS GOOD') || up.includes('ВЫГЛЯДИТ НОРМАЛЬНО') || up.includes('REASONABLE')) { vClass='verdict-good'; vText=T[lang].good; }
+    if (up.includes('КРАСНЫЕ ФЛАГИ') || up.includes('RED FLAGS') || up.includes('СТОП') || up.includes('WALK AWAY')) { vClass='verdict-danger'; vText=T[lang].danger; }
 
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
@@ -1066,24 +1140,16 @@ async function analyzeDeal() {
         </div>
       </div>`;
 
+    analysisCount++;
+    sessionStorage.setItem('analysisCount', analysisCount.toString());
+    const remaining = getRemainingAnalyses();
+    if (remaining <= 0) {
+      setTimeout(() => appendPaywall(), 8000);
+    } else {
+      updateCounter();
+    }
   } catch(err) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
-  }
-
-  btn.disabled = false;
-  btn.textContent = T[lang].analyzeBtn;
-
-  // Increment counter after successful analysis
-  analysisCount++;
-  sessionStorage.setItem('analysisCount', analysisCount.toString());
-
-  // Check if they've used all their analyses
-  const remaining = getRemainingAnalyses();
-  if (remaining <= 0) {
-    // Show paywall BELOW the result after 8 seconds - result stays visible
-    setTimeout(() => appendPaywall(), 8000);
-  } else {
-    updateCounter();
   }
 }
 
