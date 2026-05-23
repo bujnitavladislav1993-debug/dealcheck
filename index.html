@@ -1074,9 +1074,39 @@ async function analyzeDeal() {
   btn.textContent = T[lang].analyzeBtn;
 }
 
-function showConfirmationStep(extractedText) {
+function extractVIN(text) {
+  const m = text.match(/\b([A-HJ-NPR-Z0-9]{17})\b/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+function extractMake(text) {
+  const makes = ['LEXUS','TOYOTA','BMW','MERCEDES','HONDA','FORD','CHEVROLET','NISSAN','HYUNDAI','KIA','AUDI','VOLKSWAGEN','SUBARU','MAZDA','JEEP','DODGE','RAM','GMC','CADILLAC','ACURA','INFINITI','GENESIS','RIVIAN','TESLA','LINCOLN','VOLVO','PORSCHE'];
+  return makes.find(m => text.toUpperCase().includes(m)) || null;
+}
+
+function getStickerUrl(make, vin) {
+  if (!vin) return null;
+  const m = (make || '').toUpperCase();
+  if (m === 'TOYOTA' || m === 'LEXUS') return `https://www.toyota.com/configurator/api/lexicon/models/windowsticker/pdf?vin=${vin}`;
+  return null;
+}
+
+async function lookupVIN(vin) {
+  try {
+    const r = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/${vin}?format=json`);
+    const d = await r.json();
+    const v = d.Results?.[0];
+    if (!v || !v.Make) return null;
+    return { year: v.ModelYear, make: v.Make, model: v.Model, trim: v.Trim };
+  } catch { return null; }
+}
+
+async function showConfirmationStep(extractedText) {
   const ru = lang === 'ru';
   const safe = extractedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const vin = extractVIN(extractedText);
+  const make = extractMake(extractedText);
+
   document.getElementById('result-area').innerHTML = `
     <div class="result-card" style="margin-top:1.5rem">
       <div class="result-header">
@@ -1084,24 +1114,58 @@ function showConfirmationStep(extractedText) {
       </div>
       <div class="result-body">
         <p style="margin-bottom:0.75rem;color:var(--text);font-weight:500">${ru
-          ? 'AI прочитал эти данные из документа. <strong>Исправьте всё что неверно</strong> — особенно модель авто и цену — затем нажмите анализ:'
-          : 'AI read these numbers from your document. <strong>Fix anything wrong</strong> — especially car model and price — then click analyze:'}</p>
+          ? 'AI прочитал эти данные. <strong>Исправьте всё что неверно</strong> — особенно модель авто и цену:'
+          : 'AI read these numbers. <strong>Fix anything wrong</strong> — especially car model and price:'}</p>
         <textarea id="confirmed-numbers" style="min-height:200px;font-size:13px;margin-bottom:1rem">${safe}</textarea>
+
+        <div style="background:var(--surface2);border:1px solid var(--accent-border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem">
+          <div style="font-weight:600;color:var(--accent);margin-bottom:0.5rem;font-family:Syne,sans-serif;font-size:0.9rem">
+            📋 MSRP ${ru ? '(цена по прайслисту)' : '(sticker price)'}
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:0.75rem">
+            ${ru
+              ? 'Знаете MSRP? Это цена в окне машины или в email от дилера. Без MSRP AI не сможет проверить скидку.'
+              : 'Know the MSRP? It\'s on the window sticker or dealer email. Without it AI can\'t verify the discount.'}
+          </div>
+          <input type="text" id="msrp-input" placeholder="${ru ? 'Например: $72,500 — или оставьте пустым' : 'e.g. $72,500 — or leave blank'}"
+            style="width:100%;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box">
+          <div id="vin-info" style="margin-top:0.75rem;font-size:12px;color:var(--text-dim)">
+            ${vin ? `VIN: <span style="color:var(--text-muted);font-family:monospace">${vin}</span> — <span id="vin-lookup-status">${ru ? '🔍 Проверяем...' : '🔍 Looking up...'}</span>` : ''}
+          </div>
+        </div>
+
         <button class="analyze-btn" onclick="runFullAnalysis()">${ru ? 'Всё верно — запустить анализ →' : 'Confirmed — run full analysis →'}</button>
       </div>
     </div>`;
+
+  if (vin) {
+    const vinData = await lookupVIN(vin);
+    const stickerUrl = getStickerUrl(vinData?.make || make, vin);
+    const statusEl = document.getElementById('vin-lookup-status');
+    if (!statusEl) return;
+    if (vinData) {
+      statusEl.innerHTML = `<span style="color:var(--green)">✓ ${vinData.year} ${vinData.make} ${vinData.model}${vinData.trim ? ' ' + vinData.trim : ''}</span>`
+        + (stickerUrl ? ` · <a href="${stickerUrl}" target="_blank" style="color:var(--accent)">${ru ? '📄 Window Sticker' : '📄 Window Sticker'}</a>` : '');
+    } else {
+      statusEl.innerHTML = stickerUrl
+        ? `<a href="${stickerUrl}" target="_blank" style="color:var(--accent)">📄 ${ru ? 'Открыть Window Sticker' : 'Open Window Sticker'}</a>`
+        : `<span style="color:var(--text-dim)">${ru ? 'VIN не найден в базе NHTSA' : 'VIN not found in NHTSA database'}</span>`;
+    }
+  }
 }
 
 async function runFullAnalysis() {
   const confirmed = document.getElementById('confirmed-numbers').value.trim();
+  const msrp = (document.getElementById('msrp-input')?.value || '').trim();
+  const msrpLine = msrp ? `\nMSRP (confirmed by user): ${msrp}` : '';
   document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
 
   try {
     const userContent = [{
       type: 'text',
       text: lang === 'ru'
-        ? `Тип сделки: ${dealType}\n\nПользователь подтвердил следующие данные из документа. Используй ТОЛЬКО эти данные для анализа:\n\n${confirmed}`
-        : `Deal type: ${dealType}\n\nUser confirmed these numbers from the document. Use ONLY these for analysis:\n\n${confirmed}`
+        ? `Тип сделки: ${dealType}\n\nПользователь подтвердил следующие данные из документа. Используй ТОЛЬКО эти данные для анализа:${msrpLine}\n\n${confirmed}`
+        : `Deal type: ${dealType}\n\nUser confirmed these numbers from the document. Use ONLY these for analysis:${msrpLine}\n\n${confirmed}`
     }];
 
     const resp = await fetch('/api/analyze', {
