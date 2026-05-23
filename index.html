@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- saved from url=(0051)file:///Users/vladislavbujnita/Downloads/index.html -->
 <html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -545,8 +544,8 @@
 <nav>
   <div class="logo">Deal<span>Check</span> <span style="color:var(--text-muted);font-weight:400;font-size:0.9rem">by Vlad</span></div>
   <div class="lang-toggle">
-    <button class="lang-btn active" onclick="setLang(&#39;ru&#39;)" id="btn-ru">🇷🇺 RU</button>
-    <button class="lang-btn" onclick="setLang(&#39;en&#39;)" id="btn-en">🇺🇸 EN</button>
+    <button class="lang-btn active" onclick="setLang('ru')" id="btn-ru">🇷🇺 RU</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">🇺🇸 EN</button>
   </div>
 </nav>
 
@@ -586,22 +585,26 @@
   <div class="unlock-banner" id="unlock-banner">✓ Доступ открыт — загрузите вашу сделку</div>
 
   <div class="deal-types" id="deal-types-section" style="display:none">
-    <button class="type-btn active" onclick="setType(&#39;lease&#39;)" id="type-lease">
+    <button class="type-btn active" onclick="setType('lease')" id="type-lease">
       <span class="icon">🔄</span><span id="tl-lease">Лизинг</span>
     </button>
-    <button class="type-btn" onclick="setType(&#39;finance&#39;)" id="type-finance">
+    <button class="type-btn" onclick="setType('finance')" id="type-finance">
       <span class="icon">💳</span><span id="tl-finance">Кредит</span>
     </button>
-    <button class="type-btn" onclick="setType(&#39;cash&#39;)" id="type-cash">
+    <button class="type-btn" onclick="setType('cash')" id="type-cash">
       <span class="icon">💵</span><span id="tl-cash">Наличные</span>
     </button>
-    <button class="type-btn" onclick="setType(&#39;contract&#39;)" id="type-contract">
+    <button class="type-btn" onclick="setType('contract')" id="type-contract">
       <span class="icon">📄</span><span id="tl-contract">Контракт</span>
     </button>
   </div>
 
   <div id="upload-section" style="display:none">
-    <div class="upload-zone" id="upload-zone" onclick="document.getElementById(&#39;file-input&#39;).click()" ondragover="handleDrag(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+    <div class="upload-zone" id="upload-zone"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="handleDrag(event)"
+      ondragleave="handleDragLeave(event)"
+      ondrop="handleDrop(event)">
       <div class="upload-icon">📎</div>
       <div class="upload-title" id="upload-title">Есть предложение на авто от дилера?</div>
       <div class="upload-sub" id="upload-sub">Просто загрузи файл сюда или напиши цифры вручную ниже</div>
@@ -998,245 +1001,6 @@ Good: [list]
 Fix before signing: [list]
 Bottom line: Sign it / Negotiate first / Walk away`;
 }
-function setLang(l) {
-  lang = l;
-  document.getElementById('btn-ru').classList.toggle('active', l==='ru');
-  document.getElementById('btn-en').classList.toggle('active', l==='en');
-  const t = T[l];
-  document.getElementById('hero-title').innerHTML = t.heroTitle;
-  document.getElementById('hero-sub').textContent = t.heroSub;
-  document.getElementById('t1').textContent = t.t1;
-  document.getElementById('t2').textContent = t.t2;
-  document.getElementById('t3').textContent = t.t3;
-  document.getElementById('t4').textContent = t.t4;
-  document.getElementById('pay-title').textContent = t.payTitle;
-  document.getElementById('pay-note').textContent = t.payNote;
-  document.getElementById('unlock-banner').textContent = t.unlockBanner;
-  ['lease','finance','cash','contract'].forEach(tp => {
-    document.getElementById('tl-'+tp).textContent = t.types[tp];
-  });
-  document.getElementById('upload-title').textContent = t.uploadTitle;
-  document.getElementById('upload-sub').textContent = t.uploadSub;
-  document.getElementById('or-text').textContent = t.orText;
-  document.getElementById('deal-input').placeholder = t.ph[dealType];
-  document.getElementById('analyze-btn').textContent = t.analyzeBtn;
-  document.getElementById('locked-text').textContent = t.lockedText;
-
-  document.getElementById('result-area').innerHTML = '';
-}
-
-function setType(tp) {
-  dealType = tp;
-  ['lease','finance','cash','contract'].forEach(x => {
-    document.getElementById('type-'+x).classList.toggle('active', x===tp);
-  });
-  document.getElementById('deal-input').placeholder = T[lang].ph[tp];
-}
-
-function simulateUnlock() {
-  // Demo: allow first free analysis
-  showAnalyzer();
-}
-
-function showAnalyzer() {
-  document.getElementById('payment-section').style.display = 'none';
-  document.getElementById('unlock-banner').style.display = 'block';
-  document.getElementById('deal-types-section').style.display = 'grid';
-  document.getElementById('upload-section').style.display = 'block';
-  document.getElementById('locked-overlay').style.display = 'none';
-  updateCounter();
-  window.scrollTo({ top: document.getElementById('unlock-banner').offsetTop - 80, behavior: 'smooth' });
-}
-
-function updateCounter() {
-  const remaining = getRemainingAnalyses();
-  const banner = document.getElementById('unlock-banner');
-  if (paidAnalyses > 0) {
-    banner.textContent = '✓ ' + (lang === 'ru' ? `Доступ открыт — осталось анализов: ${remaining}` : `Access unlocked — analyses remaining: ${remaining}`);
-  } else {
-    banner.textContent = '✓ ' + (lang === 'ru' ? 'Бесплатный анализ — загрузите вашу сделку' : 'Free analysis — upload your deal');
-  }
-}
-
-
-
-function handleDrag(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
-function handleDragLeave(e) { document.getElementById('upload-zone').classList.remove('dragover'); }
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('upload-zone').classList.remove('dragover');
-  const f = e.dataTransfer.files[0];
-  if (f) processFile(f);
-}
-function handleFile(e) { const f = e.target.files[0]; if (f) processFile(f); }
-
-function removeFile() {
-  processedBase64 = null; isPdf = false;
-  document.getElementById('preview-area').style.display = 'none';
-  document.getElementById('preview-area').innerHTML = '';
-  document.getElementById('file-input').value = '';
-}
-
-function compressImage(file, maxW, maxH, quality) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let w = img.width, h = img.height;
-      if (w > maxW || h > maxH) {
-        const r = Math.min(maxW/w, maxH/h);
-        w = Math.round(w*r); h = Math.round(h*r);
-      }
-      const canvas = document.getElementById('compress-canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
-    img.src = url;
-  });
-}
-
-async function processFile(file) {
-  const name = file.name || 'file';
-  isPdf = file.type === 'application/pdf';
-  const preview = document.getElementById('preview-area');
-  preview.style.display = 'block';
-  preview.innerHTML = `<div class="file-card"><span>⏳ ${T[lang].processing}</span></div>`;
-
-  if (isPdf) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      processedBase64 = e.target.result.split(',')[1];
-      processedMime = 'application/pdf';
-      preview.innerHTML = `<div class="file-card"><span>📄 ${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
-    };
-    reader.readAsDataURL(file);
-    return;
-  }
-
-  try {
-    processedBase64 = await compressImage(file, 1800, 1800, 0.85);
-    processedMime = 'image/jpeg';
-    const src = 'data:image/jpeg;base64,' + processedBase64;
-    preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal document"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
-  } catch(err) {
-    preview.innerHTML = `<div class="file-card"><span>📷 ${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
-    const reader = new FileReader();
-    reader.onload = (e) => { processedBase64 = e.target.result.split(',')[1]; processedMime = 'image/jpeg'; };
-    reader.readAsDataURL(file);
-  }
-}
-
-function renderMarkdown(text) {
-  let s = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  s = s.replace(/^### (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin:1.2rem 0 0.4rem">$1</div>');
-  s = s.replace(/^## (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1.1rem;font-weight:700;color:var(--accent);margin:1.5rem 0 0.5rem">$1</div>');
-  s = s.replace(/^# (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);margin:1rem 0 0.5rem">$1</div>');
-  s = s.replace(/[*][*]([^*]+)[*][*]/g, '<strong style="color:var(--text)">$1</strong>');
-  s = s.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:0.75rem 0">');
-  s = s.replace(/^- (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--accent)">&bull;</span><span>$1</span></div>');
-  s = s.replace(new RegExp("\n\n", "g"), "<br><br>");
-  s = s.replace(new RegExp("\n", "g"), "<br>");
-  return s;
-}
-
-function buildSystem() {
-  const dealTypeLabel = {
-    lease: lang==='ru' ? 'лизинг' : 'lease',
-    finance: lang==='ru' ? 'кредит/финансирование' : 'finance/loan',
-    cash: lang==='ru' ? 'покупка за наличные' : 'cash purchase',
-    contract: lang==='ru' ? 'финальный контракт' : 'signed contract'
-  }[dealType] || dealType;
-
-  return `You are Vlad — a brutally honest, highly experienced car deal expert with 10+ years working inside Mercedes-Benz dealerships in Southern California. You have seen every dealer trick, every hidden markup, every overinflated accessory. You analyze deals exclusively from the BUYER's perspective, like a trusted friend who happens to know everything about the car business.
-
-YOUR PERSONALITY:
-- Direct, honest, no sugarcoating
-- You protect the buyer, not the dealer
-- You explain things in simple language
-- You give concrete actionable advice, not vague warnings
-- You assign a deal score 1-10 at the end
-
-DEAL TYPE BEING ANALYZED: ${dealTypeLabel}
-RESPOND IN: ${lang === 'ru' ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
-
-WHEN AN IMAGE IS PROVIDED: Read EVERY number — fine print, footnotes, all table rows, handwritten notes, grid cells. Miss nothing.
-
-CRITICAL FOR TABLES: Many deals show lease options in a GRID/TABLE format with multiple terms (24/36/48 months) and multiple down payment scenarios. READ THE ENTIRE TABLE — every row, every column, every cell.
-
-IMPORTANT — HOW TO READ A LEASE PAYMENT GRID:
-The table typically has:
-- ROWS = different down payment / customer cash amounts (e.g. $10,000 / $15,000 / $20,000)
-- COLUMNS = different lease terms (e.g. 24 months / 36 months / 48 months)
-- Each CELL = monthly payment for that combination
-- BOTTOM ROW of the table = RESIDUAL VALUES per term (NOT rebate). Example: if the bottom row shows $58,968.75 / $52,031.25 / $40,468.75 under 24/36/48 month columns — these ARE the residual values for each term
-- Rebate is shown SEPARATELY, usually below the table with a $ label like "Rebate $7,500"
-
-NEVER confuse residual values with rebates. Residual is shown inside the payment grid at the bottom row. Rebate is shown outside the grid.
-NEVER say residual is missing if it appears anywhere in the document including table footnotes, bottom rows, or labeled as "Residual" in the grid.
-
-ANALYSIS STRUCTURE — use these exact headers:
-
-ВЕРДИКТ / VERDICT
-One sentence: is this deal good, needs work, or walk away?
-
-РАЗБОР ЦИФР / NUMBER BREAKDOWN
-Go line by line through every number in the document. Explain what each number means in plain language. Flag anything unusual.
-
-Key checks by deal type:
-
-LEASE:
-- Money Factor × 2400 = APR equivalent. Is it marked up from base manufacturer rate?
-- Residual %: below 45% = fast depreciation. Higher is better for buyer.
-- Term: 39 months = dealer trick (lower payment but extra registration/maintenance year)
-- Cap Cost Reduction ≠ discount. It is the buyer's OWN money going into the lease. Risk: lost if car totals. Better to do minimum drive-off (~$3,000-4,000) and keep cash.
-- Verify payments INCLUDE tax
-- Never put large money down on a lease
-- Check: are all manufacturer rebates/incentives applied?
-
-FINANCE:
-- Is APR marked up from bank rate? Dealer gets paid on rate markup.
-- Loan term 72-84 months = danger zone, massive interest, underwater immediately
-- GAP insurance: dealer charges $600-1,200, can buy elsewhere for $200-300
-- Extended warranty: almost always overpriced at dealer
-
-CASH/USED:
-- Accessories on used cars = almost always paint protection, VIN etch, fabric protection — worthless, remove them
-- Dealer-installed mods (lift kits, wheels) often marked up 200-300% vs market price
-- Check for RECALL status — always ask for remedy
-
-FEES CHECK:
-Normal in California: Doc fee $85, Acquisition fee $795-$1,095 (lease), Registration ~1% of sale price
-RED FLAGS: Any fee not itemized, VIN etching $200-400 (worthless), Paint protection $500-2,000 (overpriced), Nitrogen tires (air is free), Market adjustment/dealer markup
-
-TRADE-IN:
-- Positive equity: ask dealer to write check for difference instead of applying all to lease
-- Negative equity: rolled into new deal, buyer pays interest on it
-- Always verify: trade allowance vs payoff math
-
-КРАСНЫЕ ФЛАГИ / RED FLAGS
-List each with: what it is + how much it costs the buyer + what to tell the dealer.
-If none: say so clearly.
-
-ВОПРОСЫ ДЛЯ ДИЛЕРА / QUESTIONS TO ASK
-3-5 specific questions. Confident, not confrontational.
-Always include: "What is the base manufacturer money factor/rate?" (lease) or "What is the buy rate from the bank?" (finance)
-
-СТРАТЕГИЯ / NEGOTIATION TIPS
-- Best deals negotiated BEFORE entering dealership — by email or phone
-- Get 2-3 competing quotes
-- Negotiate selling price FIRST, trade-in separately
-- Never reveal monthly payment target
-- Southern California minimum discount: 6-8% on most brands, 10%+ on slow-moving or outgoing models
-- Accessories not requested: refuse or demand price reduction
-
-ОЦЕНКА / SCORE
-Score: X/10
-What's good: [list]
-Fix before signing: [list]
-Bottom line: [Sign it / Negotiate first / Walk away]`;
 }
 
 async function analyzeDeal() {
@@ -1271,7 +1035,7 @@ async function analyzeDeal() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1200,
         system: buildSystem(),
         messages: [{ role:'user', content:userContent }]
@@ -1347,5 +1111,4 @@ function appendPaywall() {
 
 
 </script>
-
 </body></html>
