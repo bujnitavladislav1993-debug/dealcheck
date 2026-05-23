@@ -5,11 +5,12 @@ export default async function handler(req, res) {
 
   // ── IP Rate Limiting (Upstash Redis) ────────────────────────────────────────
   // Each full analysis = 2 API calls (extraction + full analysis).
-  // Limit: 6 calls/hr per IP = 3 full analyses.  Paid users get the same cap
-  // but 3 analyses is already what they bought, so in practice it never bites them.
+  // Free limit: 1 analysis (2 calls) per IP per 72 hours.
+  // Paid users bypass this on the client side via sessionStorage; the cap is
+  // intentionally tight to stop browser/device hopping on free tier.
   // If Upstash env vars are absent the check is skipped (fail-open / backwards compat).
-  const RATE_LIMIT    = 6;      // max API calls per window
-  const WINDOW_SECS   = 3600;   // 1 hour
+  const RATE_LIMIT    = 2;           // max API calls per window (= 1 full analysis)
+  const WINDOW_SECS   = 72 * 3600;   // 72 hours
 
   const ip = (
     req.headers['x-forwarded-for'] ||
