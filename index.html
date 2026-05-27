@@ -1759,14 +1759,9 @@ function showEmailCapture(onDone) {
       <input type="tel" id="phone-capture-input"
         placeholder="${ru ? '+1 (555) 000-0000' : '+1 (555) 000-0000'}"
         onkeydown="if(event.key==='Enter')submitCapturedEmail()">
-      <span class="optional-label">${ru ? '* телефон — необязательно' : '* phone optional'}</span>
       <button onclick="submitCapturedEmail()"
-        style="width:100%;padding:13px;border-radius:var(--radius);border:none;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:0.6rem">
+        style="width:100%;padding:13px;border-radius:var(--radius);border:none;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer">
         ${ru ? 'Получить анализ →' : 'Get my analysis →'}
-      </button>
-      <button onclick="skipEmailCapture()"
-        style="width:100%;padding:9px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif">
-        ${ru ? 'Продолжить без контактов' : 'Continue without contacts'}
       </button>
     </div>`;
   document.body.appendChild(modal);
@@ -1801,11 +1796,17 @@ async function submitCapturedEmail() {
     flash(emailInput, lang === 'ru' ? 'Введите корректный email' : 'Enter a valid email');
     return;
   }
+  // Phone: require at least 7 digits (covers international formats)
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (phoneDigits.length < 7) {
+    flash(phoneInput, lang === 'ru' ? 'Введите номер телефона' : 'Enter a valid phone');
+    return;
+  }
 
   localStorage.setItem('capturedEmail', email);
   localStorage.setItem('capturedFirstName', firstName);
   localStorage.setItem('capturedLastName',  lastName);
-  if (phone) localStorage.setItem('capturedPhone', phone);
+  localStorage.setItem('capturedPhone', phone);
   try {
     await fetch('/api/collect-email', {
       method: 'POST',

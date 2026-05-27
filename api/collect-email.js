@@ -5,11 +5,17 @@ export default async function handler(req, res) {
   if (!email || !email.includes('@') || email.length > 200) {
     return res.status(400).json({ error: 'Invalid email' });
   }
+  if (!firstName || !lastName) {
+    return res.status(400).json({ error: 'First and last name required' });
+  }
+  if (!phone || String(phone).replace(/\D/g, '').length < 7) {
+    return res.status(400).json({ error: 'Valid phone required' });
+  }
   // Sanitize names (preserve unicode letters for Cyrillic, strip control chars / scripts)
   const cleanName = (s) => s ? String(s).replace(/[<>{}\\\/\[\]"`]/g, '').trim().slice(0, 60) : null;
   const safeFirst = cleanName(firstName);
   const safeLast  = cleanName(lastName);
-  const safePhone = phone ? String(phone).replace(/[^0-9+\-() ]/g, '').slice(0, 20) : null;
+  const safePhone = String(phone).replace(/[^0-9+\-() ]/g, '').slice(0, 20);
 
   const base  = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
