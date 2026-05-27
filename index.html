@@ -568,15 +568,19 @@
     animation: slideUp 0.25s ease;
   }
   .email-modal-box input[type="email"],
-  .email-modal-box input[type="tel"] {
+  .email-modal-box input[type="tel"],
+  .email-modal-box input[type="text"] {
     width: 100%; padding: 12px 14px; border-radius: var(--radius);
     border: 1px solid var(--border); background: var(--surface2);
     color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif;
     box-sizing: border-box; margin-bottom: 0.75rem; outline: none;
     transition: border-color 0.15s;
   }
-  .email-modal-box input[type="email"]:focus,
-  .email-modal-box input[type="tel"]:focus { border-color: var(--accent); }
+  .email-modal-box input:focus { border-color: var(--accent); }
+  .email-modal-box .name-row {
+    display: flex; gap: 0.5rem;
+  }
+  .email-modal-box .name-row input { flex: 1; }
   .email-modal-box .optional-label {
     font-size: 11px; color: var(--text-muted); text-align: left;
     display: block; margin: -0.5rem 0 0.4rem 2px; opacity: 0.7;
@@ -1741,6 +1745,14 @@ function showEmailCapture(onDone) {
           ? 'Оставьте контакты — пришлём анализ на почту и сможем помочь лично, если сделка окажется сложной.'
           : 'Leave your contact info — we\'ll email your report and can help personally if the deal gets complicated.'}
       </div>
+      <div class="name-row">
+        <input type="text" id="firstname-capture-input"
+          placeholder="${ru ? 'Имя' : 'First name'}"
+          onkeydown="if(event.key==='Enter')document.getElementById('lastname-capture-input').focus()">
+        <input type="text" id="lastname-capture-input"
+          placeholder="${ru ? 'Фамилия' : 'Last name'}"
+          onkeydown="if(event.key==='Enter')document.getElementById('email-capture-input').focus()">
+      </div>
       <input type="email" id="email-capture-input"
         placeholder="${ru ? 'ваш@email.com' : 'your@email.com'}"
         onkeydown="if(event.key==='Enter')document.getElementById('phone-capture-input').focus()">
@@ -1759,35 +1771,48 @@ function showEmailCapture(onDone) {
     </div>`;
   document.body.appendChild(modal);
   window._emailCaptureCallback = onDone;
-  setTimeout(() => { const i = document.getElementById('email-capture-input'); if(i) i.focus(); }, 120);
+  setTimeout(() => { const i = document.getElementById('firstname-capture-input'); if(i) i.focus(); }, 120);
 }
 
 async function submitCapturedEmail() {
+  const firstInput = document.getElementById('firstname-capture-input');
+  const lastInput  = document.getElementById('lastname-capture-input');
   const emailInput = document.getElementById('email-capture-input');
   const phoneInput = document.getElementById('phone-capture-input');
-  const email = (emailInput?.value || '').trim();
-  const phone = (phoneInput?.value || '').trim();
+  const firstName  = (firstInput?.value || '').trim();
+  const lastName   = (lastInput?.value || '').trim();
+  const email      = (emailInput?.value || '').trim();
+  const phone      = (phoneInput?.value || '').trim();
 
-  // Validate email — show inline error rather than closing modal with invalid email
+  // Validate fields — show inline error rather than closing modal with invalid data
   // (closing without setting capturedEmail would re-trigger the modal immediately)
+  const flash = (input, msg) => {
+    if (!input) return;
+    input.style.borderColor = 'var(--red)';
+    input.placeholder = msg;
+    input.value = '';
+    setTimeout(() => { input.style.borderColor = ''; }, 2000);
+    input.focus();
+  };
+
+  if (!firstName) { flash(firstInput, lang === 'ru' ? 'Имя' : 'First name required'); return; }
+  if (!lastName)  { flash(lastInput,  lang === 'ru' ? 'Фамилия' : 'Last name required'); return; }
   if (!email || !email.includes('@')) {
-    if (emailInput) {
-      emailInput.style.borderColor = 'var(--red)';
-      emailInput.placeholder = lang === 'ru' ? 'Введите корректный email' : 'Enter a valid email';
-      emailInput.value = '';
-      setTimeout(() => { emailInput.style.borderColor = ''; }, 2000);
-      emailInput.focus();
-    }
-    return; // stay in modal
+    flash(emailInput, lang === 'ru' ? 'Введите корректный email' : 'Enter a valid email');
+    return;
   }
 
   localStorage.setItem('capturedEmail', email);
+  localStorage.setItem('capturedFirstName', firstName);
+  localStorage.setItem('capturedLastName',  lastName);
   if (phone) localStorage.setItem('capturedPhone', phone);
   try {
     await fetch('/api/collect-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        firstName,
+        lastName,
         email,
         phone: phone || null,
         ref: new URLSearchParams(window.location.search).get('ref') || null
