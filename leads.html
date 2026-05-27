@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>DealCheck — Leads</title>
+<style>
+  :root {
+    --bg:        #0a0a0a;
+    --surface:   #131313;
+    --surface2:  #1a1a1a;
+    --border:    #2a2a2a;
+    --text:      #f5f5f5;
+    --text-dim:  #aaa;
+    --text-muted:#666;
+    --accent:    #d4af37;
+    --accent-dim:#1f1a08;
+    --red:       #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--accent); }
+  .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 1.5rem; }
+
+  /* ── Auth gate ── */
+  .gate {
+    max-width: 360px; margin: 6rem auto; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center;
+  }
+  .gate h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .gate p { color: var(--text-muted); font-size: 13px; margin-bottom: 1.25rem; }
+  .gate input {
+    width: 100%; padding: 12px 14px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text); font-size: 14px; margin-bottom: 0.75rem; outline: none;
+  }
+  .gate input:focus { border-color: var(--accent); }
+  .gate button {
+    width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: var(--accent); color: #000; font-weight: 700; cursor: pointer; font-size: 14px;
+  }
+  .gate .err { color: var(--red); font-size: 13px; margin-top: 0.5rem; }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .toolbar .count { color: var(--text-dim); font-size: 13px; }
+  .btn {
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .search {
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 13px; outline: none;
+    min-width: 220px;
+  }
+  .search:focus { border-color: var(--accent); }
+
+  /* ── Table ── */
+  table {
+    width: 100%; border-collapse: collapse; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  th, td {
+    text-align: left; padding: 11px 14px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--surface2); color: var(--text-dim); font-weight: 600;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  td.email a, td.phone a { color: var(--accent); text-decoration: none; }
+  td.email a:hover, td.phone a:hover { text-decoration: underline; }
+  td.muted { color: var(--text-muted); }
+  td.date { white-space: nowrap; color: var(--text-dim); }
+  .empty { text-align: center; padding: 3rem; color: var(--text-muted); }
+  .err-banner { background: #2a1010; border: 1px solid var(--red); color: var(--red);
+    padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+
+<!-- ── Auth gate ── -->
+<div id="gate" class="gate">
+  <h2>🔒 Admin access</h2>
+  <p>Enter the admin password to view leads.</p>
+  <input type="password" id="gate-input" placeholder="password" autofocus
+    onkeydown="if(event.key==='Enter')login()">
+  <button onclick="login()">Unlock</button>
+  <div id="gate-err" class="err" style="display:none">Invalid password</div>
+</div>
+
+<!-- ── Main UI ── -->
+<div id="app" class="container" style="display:none">
+  <h1>📊 DealCheck — Leads</h1>
+  <div class="subtitle">All collected leads, newest first</div>
+
+  <div class="toolbar">
+    <div>
+      <span class="count" id="count">…</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <input type="text" id="search" class="search" placeholder="Search name / email / phone…"
+        oninput="renderTable()">
+      <button class="btn" onclick="refresh()">↻ Refresh</button>
+      <button class="btn btn-primary" onclick="downloadCsv()">↓ Download CSV</button>
+      <button class="btn" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div id="error" class="err-banner" style="display:none"></div>
+
+  <table id="leads-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Ref</th>
+      </tr>
+    </thead>
+    <tbody id="leads-body"></tbody>
+  </table>
+
+  <div id="empty" class="empty" style="display:none">No leads match your search.</div>
+</div>
+
+<script>
+let allLeads = [];
+
+async function login() {
+  const key = document.getElementById('gate-input').value.trim();
+  if (!key) return;
+  try {
+    const r = await fetch('/api/leads?key=' + encodeURIComponent(key));
+    if (r.status === 401) {
+      document.getElementById('gate-err').style.display = 'block';
+      return;
+    }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    sessionStorage.setItem('adminKey', key);
+    showApp(data);
+  } catch (e) {
+    document.getElementById('gate-err').textContent = 'Error: ' + e.message;
+    document.getElementById('gate-err').style.display = 'block';
+  }
+}
+
+function showApp(data) {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display  = 'block';
+  allLeads = data.leads || [];
+  document.getElementById('count').textContent = allLeads.length + ' total';
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const filtered = q
+    ? allLeads.filter((l) => JSON.stringify(l).toLowerCase().includes(q))
+    : allLeads;
+  const tbody = document.getElementById('leads-body');
+  const empty = document.getElementById('empty');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map((l) => {
+    const date = l.ts ? new Date(l.ts).toLocaleString() : '—';
+    const name = [l.firstName, l.lastName].filter(Boolean).join(' ') || '<span class="muted">—</span>';
+    const email = l.email
+      ? '<a href="mailto:' + escapeHtml(l.email) + '">' + escapeHtml(l.email) + '</a>'
+      : '<span class="muted">—</span>';
+    const phone = l.phone
+      ? '<a href="tel:' + escapeHtml(l.phone) + '">' + escapeHtml(l.phone) + '</a>'
+      : '<span class="muted">—</span>';
+    const ref = l.ref ? escapeHtml(l.ref) : '<span class="muted">—</span>';
+    return '<tr>' +
+      '<td class="date">' + escapeHtml(date) + '</td>' +
+      '<td>' + name + '</td>' +
+      '<td class="email">' + email + '</td>' +
+      '<td class="phone">' + phone + '</td>' +
+      '<td>' + ref + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+
+async function refresh() {
+  const key = sessionStorage.getItem('adminKey');
+  if (!key) return logout();
+  try {
+    const r = await fetch('/api/leads?key=' + encodeURIComponent(key));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    allLeads = data.leads || [];
+    document.getElementById('count').textContent = allLeads.length + ' total';
+    renderTable();
+  } catch (e) {
+    document.getElementById('error').textContent = 'Refresh failed: ' + e.message;
+    document.getElementById('error').style.display = 'block';
+  }
+}
+
+function downloadCsv() {
+  const key = sessionStorage.getItem('adminKey');
+  if (!key) return logout();
+  window.location.href = '/api/leads?format=csv&key=' + encodeURIComponent(key);
+}
+
+function logout() {
+  sessionStorage.removeItem('adminKey');
+  document.getElementById('app').style.display  = 'none';
+  document.getElementById('gate').style.display = 'block';
+  document.getElementById('gate-input').value = '';
+}
+
+// Auto-login if key already in session
+(function init() {
+  const key = sessionStorage.getItem('adminKey');
+  if (!key) return;
+  fetch('/api/leads?key=' + encodeURIComponent(key))
+    .then((r) => r.ok ? r.json() : Promise.reject(r))
+    .then(showApp)
+    .catch(() => sessionStorage.removeItem('adminKey'));
+})();
+</script>
+</body>
+</html>
