@@ -1807,6 +1807,11 @@ async function submitCapturedEmail() {
   localStorage.setItem('capturedFirstName', firstName);
   localStorage.setItem('capturedLastName',  lastName);
   localStorage.setItem('capturedPhone', phone);
+
+  // Capture what they're analyzing — most valuable context for follow-up
+  const dealText      = (document.getElementById('deal-input')?.value || '').trim();
+  const hasAttachment = !!(typeof processedBase64 !== 'undefined' && processedBase64);
+
   try {
     await fetch('/api/collect-email', {
       method: 'POST',
@@ -1816,7 +1821,11 @@ async function submitCapturedEmail() {
         lastName,
         email,
         phone: phone || null,
-        ref: new URLSearchParams(window.location.search).get('ref') || null
+        ref: new URLSearchParams(window.location.search).get('ref') || null,
+        dealText: dealText || null,
+        dealType: typeof dealType !== 'undefined' ? dealType : null,
+        hasAttachment,
+        lang: typeof lang !== 'undefined' ? lang : null
       })
     });
   } catch(e) { /* fail silently — never block the user */ }

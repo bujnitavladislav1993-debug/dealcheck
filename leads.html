@@ -86,6 +86,28 @@
   td.muted { color: var(--text-muted); }
   td.date { white-space: nowrap; color: var(--text-dim); }
   .empty { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+  /* ── Deal column ── */
+  td.deal { max-width: 340px; }
+  .badges { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .badge-type   { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
+  .badge-attach { background: #1a2030; color: #93c5fd; border: 1px solid #3b5582; }
+  .badge-lang   { background: #1a2618; color: #86efac; border: 1px solid #3d6b39; }
+  .deal-preview {
+    color: var(--text-dim); font-size: 12px; cursor: pointer;
+    text-overflow: ellipsis; overflow: hidden; line-height: 1.4;
+  }
+  .deal-preview:hover { color: var(--accent); }
+  .deal-full {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; font-size: 12px; color: var(--text-dim);
+    white-space: pre-wrap; word-break: break-word; line-height: 1.5;
+    max-height: 240px; overflow-y: auto; cursor: pointer;
+  }
   .err-banner { background: #2a1010; border: 1px solid var(--red); color: var(--red);
     padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
 </style>
@@ -129,6 +151,7 @@
         <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
+        <th>Deal</th>
         <th>Ref</th>
       </tr>
     </thead>
@@ -181,7 +204,7 @@ function renderTable() {
     return;
   }
   empty.style.display = 'none';
-  tbody.innerHTML = filtered.map((l) => {
+  tbody.innerHTML = filtered.map((l, i) => {
     const date = l.ts ? new Date(l.ts).toLocaleString() : '—';
     const name = [l.firstName, l.lastName].filter(Boolean).join(' ') || '<span class="muted">—</span>';
     const email = l.email
@@ -191,14 +214,46 @@ function renderTable() {
       ? '<a href="tel:' + escapeHtml(l.phone) + '">' + escapeHtml(l.phone) + '</a>'
       : '<span class="muted">—</span>';
     const ref = l.ref ? escapeHtml(l.ref) : '<span class="muted">—</span>';
+
+    // Deal column: badge for type + attachment, plus truncated text preview
+    let dealCell = '';
+    const badges = [];
+    if (l.dealType)      badges.push('<span class="badge badge-type">' + escapeHtml(l.dealType) + '</span>');
+    if (l.hasAttachment) badges.push('<span class="badge badge-attach">📎 file</span>');
+    if (l.lang)          badges.push('<span class="badge badge-lang">' + escapeHtml(l.lang) + '</span>');
+    if (badges.length) dealCell += '<div class="badges">' + badges.join(' ') + '</div>';
+    if (l.dealText) {
+      const preview = l.dealText.length > 80 ? l.dealText.slice(0, 80) + '…' : l.dealText;
+      dealCell += '<div class="deal-preview" onclick="toggleDeal(' + i + ')">'
+                + escapeHtml(preview) + '</div>'
+                + '<div class="deal-full" id="deal-full-' + i + '" style="display:none">'
+                + escapeHtml(l.dealText) + '</div>';
+    } else if (!badges.length) {
+      dealCell = '<span class="muted">—</span>';
+    }
+
     return '<tr>' +
       '<td class="date">' + escapeHtml(date) + '</td>' +
       '<td>' + name + '</td>' +
       '<td class="email">' + email + '</td>' +
       '<td class="phone">' + phone + '</td>' +
+      '<td class="deal">' + dealCell + '</td>' +
       '<td>' + ref + '</td>' +
     '</tr>';
   }).join('');
+}
+
+function toggleDeal(i) {
+  const preview = document.querySelectorAll('.deal-preview')[i];
+  const full    = document.getElementById('deal-full-' + i);
+  if (!full) return;
+  if (full.style.display === 'none') {
+    full.style.display = 'block';
+    if (preview) preview.style.display = 'none';
+  } else {
+    full.style.display = 'none';
+    if (preview) preview.style.display = 'block';
+  }
 }
 
 function escapeHtml(s) {

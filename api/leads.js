@@ -39,15 +39,19 @@ export default async function handler(req, res) {
 
     // 5. CSV export branch
     if (req.query.format === 'csv') {
-      const header = ['Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Ref'];
+      const header = ['Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Deal Type', 'Attachment', 'Lang', 'Deal Text', 'Ref'];
       const esc    = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
       const rows   = leads.map((l) => [
         l.ts ? new Date(l.ts).toISOString() : '',
-        l.firstName || '',
-        l.lastName  || '',
-        l.email     || '',
-        l.phone     || '',
-        l.ref       || ''
+        l.firstName     || '',
+        l.lastName      || '',
+        l.email         || '',
+        l.phone         || '',
+        l.dealType      || '',
+        l.hasAttachment ? 'yes' : '',
+        l.lang          || '',
+        l.dealText      || '',
+        l.ref           || ''
       ].map(esc).join(','));
       const csv = [header.join(','), ...rows].join('\n');
 
