@@ -730,20 +730,15 @@
   <div class="trust-item"><span class="num">RU/EN</span> <span id="t4">двуязычный</span></div>
 </div>
 
-<!-- PAYMENT -->
-<div class="payment-section" id="payment-section">
-  <div class="payment-title" id="pay-title">💳 3 анализа сделок — $20</div>
+<!-- Legacy payment gate — kept in DOM (display:none) because showAnalyzer()
+     and the ref-bonus banner reference it by id. With the new freemium
+     model the first check is free, so this card never displays. -->
+<div class="payment-section" id="payment-section" style="display:none">
+  <div class="payment-title" id="pay-title"></div>
   <div class="payment-methods">
-    <a href="https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00" target="_blank" class="pay-btn primary">
-      💳 Card / Stripe
-    </a>
-
-    <button class="pay-btn" onclick="simulateUnlock()" id="demo-btn" style="border-color:var(--accent);color:var(--accent)">
-      🔓 Попробовать бесплатно
-    </button>
+    <a href="https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00" target="_blank" class="pay-btn primary">Card / Stripe</a>
   </div>
-
-  <div class="payment-note" id="pay-note">Одноразовая оплата · Мгновенный доступ · Никаких подписок</div>
+  <div class="payment-note" id="pay-note"></div>
 </div>
 
 <!-- ANALYZER -->
@@ -817,9 +812,11 @@
     <div id="result-area"></div>
   </div>
 
-  <div class="locked-overlay" id="locked-overlay">
+  <!-- Legacy locked overlay — never visible in freemium model (analyzer is unlocked on load).
+       Kept in DOM because showAnalyzer() toggles it. -->
+  <div class="locked-overlay" id="locked-overlay" style="display:none">
     <div class="lock-icon">🔒</div>
-    <p id="locked-text">Оплатите $20 выше — и загружайте ваши цифры или фото от дилера. AI разберёт сделку за 2 минуты.</p>
+    <p id="locked-text"></p>
   </div>
 </div>
 
@@ -991,11 +988,10 @@ function renderUnlockedAnalysis(body, diagnosis) {
   resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Show analyzer if returning user still has analyses left
+// Freemium model: analyzer is visible to everyone on page load.
+// First check is free; the post-analysis paywall handles monetization.
 window.addEventListener("DOMContentLoaded", function() {
-  if (paidAnalyses > 0 && analysisCount < (4 + refBonus)) {
-    showAnalyzer();
-  }
+  showAnalyzer();
   animateCounter(getGlobalCount());
 
   // Show referral bonus banner if they arrived via a ref link
