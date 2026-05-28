@@ -937,6 +937,24 @@ function renderUnlockedAnalysis(body, diagnosis) {
   window.lastDiagnosis    = diagnosis;
   const resultArea = document.getElementById('result-area');
   if (!resultArea) return;
+  const dangerBlock = vClass === 'verdict-danger' ? `
+    <div style="margin:0 1.25rem 1.25rem;background:var(--red-bg);border:1px solid rgba(231,76,60,0.3);border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.2rem;margin-bottom:0.5rem">🚨</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--red);margin-bottom:0.4rem;font-size:0.95rem">
+        ${ru ? 'Серьёзные проблемы — не подписывайте без консультации' : 'Serious red flags — don\'t sign without a consultation'}
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
+        ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
+      </div>
+      <a href="https://www.instagram.com/pereprodavec_usa/" target="_blank"
+        style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none;margin-right:8px">
+        📱 Instagram DM
+      </a>
+      <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
+        style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border:1px solid var(--red);color:var(--red);font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+        📅 ${ru ? 'Записаться' : 'Book call'}
+      </a>
+    </div>` : '';
   resultArea.innerHTML = `
     <div class="result-card">
       <div class="result-header">
@@ -961,6 +979,7 @@ function renderUnlockedAnalysis(body, diagnosis) {
           🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}
         </button>
       </div>
+      ${dangerBlock}
       <div class="cta-box">
         <div>
           <div class="cta-box-text">${T[lang].ctaText}</div>
@@ -1204,9 +1223,11 @@ function extractDiagnosis(text) {
     const body = text.replace(m[0], '').trim();
     return { diagnosis, body };
   } catch (e) {
-    // Malformed JSON: log but never fail the whole flow — fall back to markdown only
-    console.warn('[diagnosis] JSON parse failed, falling back to markdown only:', e);
-    return { diagnosis: null, body: text.replace(m[0], '').trim() };
+    // Malformed JSON: log but never fail the whole flow — fall back to markdown only.
+    // Keep the original text intact (don't strip the broken block) so we don't accidentally
+    // delete content the user paid to see.
+    console.warn('[diagnosis] JSON parse failed, keeping body intact:', e);
+    return { diagnosis: null, body: text };
   }
 }
 
@@ -1235,18 +1256,29 @@ function renderDiagnosisCard(diag) {
       + '</div></div>';
   }
   const sevIcon = { critical: '🔴', moderate: '🟡', minor: '🟢' };
-  const issuesHtml = diag.issues.map((i) => `
+  // Coerce numeric fields defensively — the AI sometimes emits "500" (string) instead of 500
+  const toNum = (v) => {
+    const n = typeof v === 'number' ? v : parseInt(String(v).replace(/[^\d-]/g, ''), 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const fmtMoney = (n) => '~$' + n.toLocaleString();
+  const issuesHtml = diag.issues.map((i) => {
+    const amount = toNum(i && i.dollarAmount);
+    const label  = (i && i.label) ? String(i.label) : '';
+    if (!label) return ''; // skip empty/malformed issues entirely
+    return `
     <div class="diag-issue">
       <div class="diag-issue-head">
         <span class="diag-icon">${sevIcon[i.severity] || '⚠️'}</span>
         ${i.category ? '<span class="diag-category">' + escapeHtmlText(i.category) + '</span>' : ''}
-        ${i.dollarAmount > 0 ? '<span class="diag-amount">~$' + i.dollarAmount.toLocaleString() + '</span>' : ''}
+        ${amount > 0 ? '<span class="diag-amount">' + fmtMoney(amount) + '</span>' : ''}
       </div>
-      <div class="diag-label">${escapeHtmlText(i.label)}</div>
-    </div>
-  `).join('');
-  const totalLine = diag.totalOverpay > 0
-    ? ' <span class="muted">·</span> ~$' + diag.totalOverpay.toLocaleString() + ' '
+      <div class="diag-label">${escapeHtmlText(label)}</div>
+    </div>`;
+  }).join('');
+  const totalOverpay = toNum(diag.totalOverpay);
+  const totalLine = totalOverpay > 0
+    ? ' <span class="muted">·</span> ' + fmtMoney(totalOverpay) + ' '
       + (ru ? 'возможной переплаты' : 'in potential overpayment')
     : '';
   return `<div class="diagnosis-card">
@@ -1444,9 +1476,11 @@ Score: X/10 (be honest — 10 is unicorn deal, 5 is average, below 4 = problems)
 📌 Итог / Bottom line: Sign it / Negotiate first / Walk away
 
 ═══════════════════════════════════════
-STEP 4 — DIAGNOSIS HEADER (CRITICAL — DO THIS LAST)
+OUTPUT FORMAT — READ THIS BEFORE WRITING ANYTHING
 ═══════════════════════════════════════
-At the VERY START of your response, BEFORE everything else, output a structured diagnosis block that summarizes the issues you found. This powers the free-tier preview. Format exactly:
+The VERY FIRST bytes of your response MUST be the diagnosis JSON block below — no prose, no headers, no whitespace before it. After the closing </DIAGNOSIS_JSON> tag, output the full markdown analysis exactly as specified in STEPS 1–3 above.
+
+This JSON powers the free-tier preview. Format exactly:
 
 <DIAGNOSIS_JSON>
 {
@@ -1464,8 +1498,6 @@ At the VERY START of your response, BEFORE everything else, output a structured 
   ]
 }
 </DIAGNOSIS_JSON>
-
-After this JSON block, output the full markdown analysis EXACTLY as specified in STEPS 1–3 above.
 
 CRITICAL RULES for the diagnosis JSON:
 - Issue labels MUST be specific to the user's actual numbers — never generic ("3 red flags found" is BAD, "Doc fee $699 vs market $150" is GOOD).
@@ -2009,17 +2041,28 @@ async function compareDeal() {
     const text = data.content?.map(b => b.text||'').join('') || '';
     if (!text) throw new Error('Empty response from AI');
 
+    // Same gating logic as runFullAnalysis — free users see a teaser + paywall,
+    // paid users get the full comparison + action buttons.
     window.lastAnalysisText = text;
+    try { sessionStorage.setItem('lastAnalysisBody', text); sessionStorage.setItem('lastDiagnosis', ''); } catch (_) {}
+    const paid = paidAnalyses > 0;
+    const prescriptionClass = paid ? '' : 'prescription-locked';
+    const teaserHtml = paid ? '' : `<div class="prescription-teaser">${ru ? '🔒 Полное сравнение — заблокировано' : '🔒 Full comparison — locked'}</div>`;
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
         <div class="result-header">
           <span class="verdict-badge verdict-warning">⚖️ ${ru ? 'СРАВНЕНИЕ СДЕЛОК' : 'DEAL COMPARISON'}</span>
         </div>
-        <div class="result-body">${renderMarkdown(text)}</div>
+        ${teaserHtml}
+        <div class="${prescriptionClass}">
+          <div class="result-body prescription-body">${renderMarkdown(text)}</div>
+        </div>
+        ${!paid ? renderPaywallCard() : ''}
         <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          ${paid ? `
           <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center">📧 ${ru ? 'Письмо дилеру' : 'Write Email'}</button>
           <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📄 ${ru ? 'Скачать PDF' : 'Download PDF'}</button>
-          <button onclick="shareAnalysis('${ru ? 'Сравнил 2 сделки через DealCheck' : 'Compared 2 deals with DealCheck'}','verdict-warning',this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📋 ${ru ? 'Скопировать' : 'Copy'}</button>
+          <button onclick="shareAnalysis('${ru ? 'Сравнил 2 сделки через DealCheck' : 'Compared 2 deals with DealCheck'}','verdict-warning',this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📋 ${ru ? 'Скопировать' : 'Copy'}</button>` : ''}
           <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;border-color:var(--accent);color:var(--accent)">🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}</button>
         </div>
         <div id="email-area"></div>
@@ -2195,24 +2238,15 @@ function shareWithRef(btn) {
 function appendPaywall() {
   // Skip if a paywall card is already on the page (the new diagnosis flow renders one inline)
   if (document.getElementById('paywall-card')) return;
-  // Don't hide the result - just append paywall below it
+  // Don't hide the result - just append the two-tier paywall below it.
+  // Reuses renderPaywallCard() so pricing/copy stays in one place.
   const resultArea = document.getElementById('result-area');
-  const paywallDiv = document.createElement('div');
-  paywallDiv.style.cssText = 'margin-top:1.5rem;text-align:center;padding:2rem 1rem;background:var(--surface);border:1px solid var(--accent-border);border-radius:var(--radius-lg);';
-  paywallDiv.innerHTML = `
-    <div style="font-size:1.5rem;margin-bottom:0.75rem">🔒</div>
-    <div style="font-family:Syne,sans-serif;font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">
-      ${lang === 'ru' ? 'Бесплатный анализ использован' : 'Free analysis used'}
-    </div>
-    <div style="font-size:14px;color:var(--text-muted);margin-bottom:1.25rem;max-width:320px;margin-left:auto;margin-right:auto">
-      ${lang === 'ru' ? 'Получите ещё 3 анализа за $20 — проверьте любые сделки перед подписью' : 'Get 3 more analyses for $20 — check any deal before signing'}
-    </div>
-    <a href="https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;font-size:15px;font-family:Syne,sans-serif;font-weight:700;background:var(--accent);color:#000;border-radius:var(--radius);text-decoration:none;">
-      💳 ${lang === 'ru' ? 'Получить 3 анализа — $20' : 'Get 3 analyses — $20'}
-    </a>
-  `;
-  resultArea.appendChild(paywallDiv);
-  paywallDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderPaywallCard();
+  const card = wrapper.firstElementChild;
+  if (!card) return;
+  resultArea.appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 
