@@ -24,15 +24,18 @@ export default async function handler(req, res) {
     const mgetPath  = keys.map((k) => encodeURIComponent(k)).join('/');
     const valuesRes = await fetch(`${base}/mget/${mgetPath}`, auth);
     const { result: values } = await valuesRes.json();
+    // MGET can return null (e.g. all keys expired between KEYS and MGET, or transient error)
+    const safeValues = Array.isArray(values) ? values : [];
 
-    // 3. Parse & merge
-    const leads = values.map((v, i) => {
+    // 3. Parse & merge — skip any keys whose value came back null/missing
+    const leads = safeValues.map((v, i) => {
+      if (v == null) return { key: keys[i], missing: true };
       try {
         return { key: keys[i], ...(JSON.parse(v)) };
       } catch {
         return { key: keys[i], raw: v, parseError: true };
       }
-    });
+    }).filter((l) => !l.missing);
 
     // 4. Sort newest first
     leads.sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -53,7 +56,8 @@ export default async function handler(req, res) {
         l.dealText      || '',
         l.ref           || ''
       ].map(esc).join(','));
-      const csv = [header.join(','), ...rows].join('\n');
+      // RFC 4180 line ending — Excel on Windows treats LF-only newlines as a single cell.
+      const csv = [header.join(','), ...rows].join('\r\n');
 
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="leads-${Date.now()}.csv"`);

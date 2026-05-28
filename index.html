@@ -858,7 +858,16 @@ let processedBase64_b = null;
 let processedMime_b = 'image/jpeg';
 let isPdf_b = false;
 let analysisCount = parseInt(sessionStorage.getItem('analysisCount') || '0');
-let paidAnalyses = parseInt(sessionStorage.getItem('paidAnalyses') || '0');
+// Paid status persists across browser sessions — closing the tab shouldn't
+// "forget" a paid purchase. Migrate any legacy sessionStorage value once.
+(function migratePaidAnalyses() {
+  const legacy = sessionStorage.getItem('paidAnalyses');
+  if (legacy && !localStorage.getItem('paidAnalyses')) {
+    localStorage.setItem('paidAnalyses', legacy);
+    sessionStorage.removeItem('paidAnalyses');
+  }
+})();
+let paidAnalyses = parseInt(localStorage.getItem('paidAnalyses') || '0');
 
 // Referral bonus — visiting with ?ref=CODE gives 1 extra free analysis this session
 if (new URLSearchParams(window.location.search).get('ref')) {
@@ -902,12 +911,13 @@ function isUnlocked() {
 // Auto-unlock if returning from Stripe payment
 if (window.location.search.includes("paid=true")) {
   paidAnalyses = 1;
-  sessionStorage.setItem('paidAnalyses', '1');
+  localStorage.setItem('paidAnalyses', '1');
   // Reset count so they get fresh 3 analyses
   analysisCount = 0;
   sessionStorage.setItem('analysisCount', '0');
   window.addEventListener("DOMContentLoaded", function() {
-    showAnalyzer();
+    // skipScroll so we land on the restored full analysis, not the upload zone
+    showAnalyzer({ skipScroll: true });
     // If we stored their last analysis before checkout, re-render it with the full
     // prescription unlocked. Otherwise they'd lose context after paying.
     try {
@@ -1117,14 +1127,18 @@ function simulateUnlock() {
   showAnalyzer();
 }
 
-function showAnalyzer() {
+function showAnalyzer(opts) {
   document.getElementById('payment-section').style.display = 'none';
   document.getElementById('unlock-banner').style.display = 'block';
   document.getElementById('deal-types-section').style.display = 'grid';
   document.getElementById('upload-section').style.display = 'block';
   document.getElementById('locked-overlay').style.display = 'none';
   updateCounter();
-  window.scrollTo({ top: document.getElementById('unlock-banner').offsetTop - 80, behavior: 'smooth' });
+  // Skip the scroll when we're restoring a paid analysis — otherwise we'd
+  // scroll AWAY from the freshly-rendered full report.
+  if (!opts || !opts.skipScroll) {
+    window.scrollTo({ top: document.getElementById('unlock-banner').offsetTop - 80, behavior: 'smooth' });
+  }
 }
 
 function updateCounter() {
@@ -1244,11 +1258,19 @@ function renderDiagnosisCard(diag) {
             : '📋 Analysis ready — unlock the full breakdown below to see all findings.')
       + '</div></div>';
   }
-  // Explicitly clean deal (verdict=good, no issues): celebrate it.
+  // Only show the celebratory "clean deal" message if the verdict actually agrees.
+  // If verdict='danger' or 'warn' but issues=[], something is off — show a neutral state
+  // instead of a misleading green check next to a red verdict badge.
   if (!Array.isArray(diag.issues) || diag.issues.length === 0) {
-    return '<div class="diagnosis-card"><div class="diagnosis-clean">'
-      + (ru ? '✅ Сделка выглядит чисто — серьёзных проблем не обнаружено.'
-            : '✅ Deal looks clean — no serious issues found.')
+    if (diag.verdict === 'good') {
+      return '<div class="diagnosis-card"><div class="diagnosis-clean">'
+        + (ru ? '✅ Сделка выглядит чисто — серьёзных проблем не обнаружено.'
+              : '✅ Deal looks clean — no serious issues found.')
+        + '</div></div>';
+    }
+    return '<div class="diagnosis-card"><div class="diagnosis-summary" style="color:var(--text-muted);font-weight:500">'
+      + (ru ? '📋 Анализ готов — откройте полный разбор ниже.'
+            : '📋 Analysis ready — unlock the full breakdown below.')
       + '</div></div>';
   }
   const sevIcon = { critical: '🔴', moderate: '🟡', minor: '🟢' };
@@ -1527,8 +1549,13 @@ Output a clean bulleted list only. No analysis, no opinions.`;
 
 async function analyzeDeal() {
   if (compareMode) { compareDeal(); return; }
+  // Re-entrancy guard — prevent double-submit from burning credit / rate limit.
+  // Set early (before email modal) so even a fast double-click is no-op.
+  if (window.__analyzing) return;
   // Email capture — show once; skipping is fine
-  if (!localStorage.getItem('capturedEmail')) {
+  // v2 gate: require firstName/lastName/phone too. Legacy 'capturedEmail' from before
+  // the required-fields refactor doesn't satisfy this — those users need to re-fill.
+  if (!localStorage.getItem('capturedLead_v2')) {
     showEmailCapture(() => analyzeDeal());
     return;
   }
@@ -1538,6 +1565,7 @@ async function analyzeDeal() {
     return;
   }
 
+  window.__analyzing = true;
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
   btn.textContent = lang === 'ru' ? 'Читаем документ...' : 'Reading document...';
@@ -1578,6 +1606,9 @@ async function analyzeDeal() {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
   }
 
+  // Clear re-entry guard once extraction is done (or failed) — user is now
+  // on the confirmation step (or seeing the error). runFullAnalysis re-arms it.
+  window.__analyzing = false;
   btn.disabled = false;
   btn.textContent = T[lang].analyzeBtn;
 }
@@ -1702,6 +1733,9 @@ async function showConfirmationStep(extractedText) {
 }
 
 async function runFullAnalysis() {
+  // Re-entrancy guard — prevent double-submit from burning credit / rate limit.
+  if (window.__analyzing) return;
+  window.__analyzing = true;
   const confirmed = document.getElementById('confirmed-numbers').value.trim();
   const msrp = (document.getElementById('msrp-input')?.value || '').trim();
   const msrpLine = msrp ? `\nMSRP (confirmed by user): ${msrp}` : '';
@@ -1830,6 +1864,8 @@ async function runFullAnalysis() {
     }
   } catch(err) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  } finally {
+    window.__analyzing = false;
   }
 }
 
@@ -1996,10 +2032,13 @@ One concrete action: what to say to which dealer to close the best possible deal
 
 async function compareDeal() {
   const ru = lang === 'ru';
+  // Re-entrancy guard (same as runFullAnalysis)
+  if (window.__analyzing) return;
   if (!processedBase64 && !processedBase64_b) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${ru ? 'Загрузите хотя бы одну сделку для сравнения.' : 'Upload at least one deal to compare.'}</div>`;
     return;
   }
+  window.__analyzing = true;
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
   btn.textContent = ru ? 'Сравниваем...' : 'Comparing...';
@@ -2076,6 +2115,8 @@ async function compareDeal() {
     else updateCounter();
   } catch(err) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  } finally {
+    window.__analyzing = false;
   }
   btn.disabled = false;
   btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
@@ -2161,6 +2202,7 @@ async function submitCapturedEmail() {
     return;
   }
 
+  localStorage.setItem('capturedLead_v2', '1');
   localStorage.setItem('capturedEmail', email);
   localStorage.setItem('capturedFirstName', firstName);
   localStorage.setItem('capturedLastName',  lastName);
@@ -2190,10 +2232,9 @@ async function submitCapturedEmail() {
   closeEmailModal();
 }
 
-function skipEmailCapture() {
-  localStorage.setItem('capturedEmail', 'skipped');
-  closeEmailModal();
-}
+// Dead code path — the skip button was removed when all fields became required.
+// Kept as a safe no-op in case any orphaned onclick references it.
+function skipEmailCapture() { closeEmailModal(); }
 
 function closeEmailModal() {
   const m = document.getElementById('email-modal');
