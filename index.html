@@ -639,7 +639,13 @@
       position: absolute; left: 0; top: 0;
       width: 100%; padding: 2rem; box-sizing: border-box;
     }
-    .pay-btn, button, .cta-box, .urgency-cta { display: none !important; visibility: hidden !important; }
+    .pay-btn, button, .cta-box, .urgency-cta, .paywall-card, .prescription-teaser { display: none !important; visibility: hidden !important; }
+    /* Free users shouldn't be able to print the blurred content */
+    .prescription-locked { display: none !important; }
+    .prescription-locked .prescription-body { filter: none !important; max-height: none !important; }
+    .diagnosis-card { border-color: #aaa !important; background: #fff !important; color: #000 !important; }
+    .diagnosis-card * { color: #000 !important; }
+    .diag-amount { color: #000 !important; }
     .print-header {
       display: block !important; visibility: visible !important;
       margin-bottom: 1.25rem; padding-bottom: 1rem;
@@ -1213,7 +1219,16 @@ function escapeHtmlText(s) {
 // Free-tier diagnosis card: shows category + label + $ per issue, plus a summary line.
 function renderDiagnosisCard(diag) {
   const ru = lang === 'ru';
-  if (!diag || !Array.isArray(diag.issues) || diag.issues.length === 0) {
+  // Null diagnosis = JSON header missing/malformed. Be cautious: do NOT claim the deal
+  // is clean since the markdown body might still contain real red flags.
+  if (!diag) {
+    return '<div class="diagnosis-card"><div class="diagnosis-summary" style="color:var(--text-muted);font-weight:500">'
+      + (ru ? '📋 Анализ готов — откройте полный разбор ниже, чтобы увидеть все находки.'
+            : '📋 Analysis ready — unlock the full breakdown below to see all findings.')
+      + '</div></div>';
+  }
+  // Explicitly clean deal (verdict=good, no issues): celebrate it.
+  if (!Array.isArray(diag.issues) || diag.issues.length === 0) {
     return '<div class="diagnosis-card"><div class="diagnosis-clean">'
       + (ru ? '✅ Сделка выглядит чисто — серьёзных проблем не обнаружено.'
             : '✅ Deal looks clean — no serious issues found.')
