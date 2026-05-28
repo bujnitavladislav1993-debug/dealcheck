@@ -615,9 +615,9 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">⚡ AI · 10+ лет в автобизнесе в США</div>
-  <h1 id="hero-title">Есть цена от автодилера?<br>Покажите <em>Владу</em>.</h1>
-  <p id="hero-sub">Email, скрин или фото — первая проверка бесплатно. 10 лет в автобизнесе США + AI: за 2 минуты найду скрытые наценки и скажу, на что давить при торге.</p>
+  <div class="hero-badge" id="hero-badge">10+ ЛЕТ В АВТОБИЗНЕСЕ США · УСИЛЕНО AI</div>
+  <h1 id="hero-title">Не подписывайте контракт с дилером,<br>пока я не <em>проверю</em> цифры</h1>
+  <p id="hero-sub">Есть цена от автодилера? Я Влад, 10 лет в автобизнесе США. Пришлите email, скрин или фото — первая проверка бесплатно. С помощью AI за 2 минуты найду скрытые наценки и скажу, на что давить при торге.</p>
 </section>
 
 <!-- TRUST BAR -->
@@ -832,8 +832,9 @@ window.addEventListener("DOMContentLoaded", function() {
 
 const T = {
   ru: {
-    heroTitle: 'Есть цена от автодилера?<br>Покажите <em>Владу</em>.',
-    heroSub: 'Email, скрин или фото — первая проверка бесплатно. 10 лет в автобизнесе США + AI: за 2 минуты найду скрытые наценки и скажу, на что давить при торге.',
+    heroBadge: '10+ ЛЕТ В АВТОБИЗНЕСЕ США · УСИЛЕНО AI',
+    heroTitle: 'Не подписывайте контракт с дилером,<br>пока я не <em>проверю</em> цифры',
+    heroSub: 'Есть цена от автодилера? Я Влад, 10 лет в автобизнесе США. Пришлите email, скрин или фото — первая проверка бесплатно. С помощью AI за 2 минуты найду скрытые наценки и скажу, на что давить при торге.',
     t1:'лет в автобизнесе в США', t2:'сделок проанализировано', t3:'на анализ сделки', t4:'двуязычный',
     payTitle: '💳 Разблокировать анализ — $20',
     payNote: 'Одноразовая оплата · Мгновенный доступ · Никаких подписок',
@@ -864,8 +865,9 @@ const T = {
 
   },
   en: {
-    heroTitle: 'Got a price from a dealer?<br>Show it to <em>Vlad</em>.',
-    heroSub: 'Email, screenshot, or photo — first check is free. 10 years in the U.S. auto business + AI: in 2 minutes I\'ll find the hidden markups and tell you exactly where to push when you negotiate.',
+    heroBadge: '10+ YEARS IN U.S. AUTO BUSINESS · AI-POWERED',
+    heroTitle: 'Don\'t sign that dealer contract<br>until I <em>check</em> the numbers',
+    heroSub: 'Got a price from a dealer? I\'m Vlad, 10 years in the U.S. auto business. Send me the email, screenshot, or photo — first check is free. With AI, in 2 minutes I\'ll find the hidden markups and tell you exactly where to push when you negotiate.',
     t1:'years in the industry', t2:'deals analyzed', t3:'to analyze your deal', t4:'bilingual',
     payTitle: '💳 Unlock analysis — $20',
     payNote: 'One-time payment · Instant access · No subscriptions',
@@ -902,8 +904,9 @@ function setLang(l) {
   document.getElementById('btn-ru').classList.toggle('active', l==='ru');
   document.getElementById('btn-en').classList.toggle('active', l==='en');
   const t = T[l];
-  document.getElementById('hero-title').innerHTML = t.heroTitle;
-  document.getElementById('hero-sub').textContent = t.heroSub;
+  document.getElementById('hero-badge').textContent = t.heroBadge;
+  document.getElementById('hero-title').innerHTML  = t.heroTitle;
+  document.getElementById('hero-sub').textContent  = t.heroSub;
   document.getElementById('t1').textContent = t.t1;
   document.getElementById('t2').textContent = t.t2;
   document.getElementById('t3').textContent = t.t3;
