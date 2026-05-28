@@ -474,6 +474,102 @@
 
   .cta-link:hover { opacity: 0.88; }
 
+  /* ── Diagnosis card (free-tier preview) ── */
+  .diagnosis-card {
+    margin: 0 1.25rem 1.25rem;
+    background: linear-gradient(180deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02));
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .diagnosis-summary {
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700;
+    color: var(--accent); margin-bottom: 1rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--accent-border);
+  }
+  .diagnosis-summary .muted { color: var(--text-muted); font-weight: 500; }
+  .diagnosis-clean { color: #4ade80; font-size: 0.95rem; font-weight: 600; }
+  .diag-issue {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .diag-issue:last-child { border-bottom: none; padding-bottom: 0; }
+  .diag-issue-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;
+  }
+  .diag-icon { font-size: 14px; }
+  .diag-category {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted); background: var(--surface2); padding: 2px 8px; border-radius: 999px;
+  }
+  .diag-amount {
+    margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 700;
+    color: var(--accent); font-size: 0.95rem;
+  }
+  .diag-label { color: var(--text); font-size: 14px; line-height: 1.5; }
+
+  /* ── Locked prescription (paywall blur) ── */
+  .prescription-locked { position: relative; }
+  .prescription-locked .prescription-body {
+    filter: blur(5px); user-select: none; pointer-events: none;
+    max-height: 380px; overflow: hidden;
+  }
+  .prescription-locked::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 180px;
+    background: linear-gradient(to bottom, transparent, var(--surface) 90%);
+    pointer-events: none;
+  }
+  .prescription-teaser {
+    font-size: 12px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.6px; padding: 0.5rem 1.25rem 0; font-weight: 600;
+  }
+
+  /* ── Two-tier paywall card ── */
+  .paywall-card {
+    margin: 1rem 1.25rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+  }
+  .paywall-head {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem;
+    color: var(--text); margin-bottom: 0.5rem;
+  }
+  .paywall-sub {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 1.25rem;
+    line-height: 1.5; max-width: 480px; margin-left: auto; margin-right: auto;
+  }
+  .paywall-tiers { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+  .paywall-tier {
+    flex: 1 1 200px; min-width: 200px; max-width: 280px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1rem;
+    text-decoration: none; color: var(--text);
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    position: relative; display: block;
+  }
+  .paywall-tier:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .paywall-tier-premium {
+    background: linear-gradient(180deg, var(--accent-dim), var(--surface2));
+    border-color: var(--accent);
+  }
+  .tier-price {
+    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+    color: var(--accent); line-height: 1; margin-bottom: 0.25rem;
+  }
+  .tier-title {
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700;
+    color: var(--text); margin-bottom: 0.4rem;
+  }
+  .tier-detail { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .tier-badge {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #000; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 10px; padding: 3px 10px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+  }
+
   .loading-dots { display: inline-flex; gap: 5px; padding: 2rem 0; }
   .loading-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: dot 1.2s infinite; }
   .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
@@ -807,7 +903,67 @@ if (window.location.search.includes("paid=true")) {
   // Reset count so they get fresh 3 analyses
   analysisCount = 0;
   sessionStorage.setItem('analysisCount', '0');
-  window.addEventListener("DOMContentLoaded", function() { showAnalyzer(); });
+  window.addEventListener("DOMContentLoaded", function() {
+    showAnalyzer();
+    // If we stored their last analysis before checkout, re-render it with the full
+    // prescription unlocked. Otherwise they'd lose context after paying.
+    try {
+      const body = sessionStorage.getItem('lastAnalysisBody');
+      const diagStr = sessionStorage.getItem('lastDiagnosis');
+      if (body) {
+        const diagnosis = diagStr ? JSON.parse(diagStr) : null;
+        renderUnlockedAnalysis(body, diagnosis);
+      }
+    } catch (e) { /* if anything goes wrong, just show the empty analyzer */ }
+  });
+}
+
+// Render an already-completed analysis with the prescription fully unlocked.
+// Used after Stripe redirect so paid users see their full report immediately.
+function renderUnlockedAnalysis(body, diagnosis) {
+  const ru = lang === 'ru';
+  let vClass = 'verdict-warning', vText = T[lang].warn;
+  if (diagnosis && diagnosis.verdict) {
+    if (diagnosis.verdict === 'good')   { vClass = 'verdict-good';   vText = T[lang].good; }
+    if (diagnosis.verdict === 'danger') { vClass = 'verdict-danger'; vText = T[lang].danger; }
+  }
+  window.lastAnalysisText = body;
+  window.lastDiagnosis    = diagnosis;
+  const resultArea = document.getElementById('result-area');
+  if (!resultArea) return;
+  resultArea.innerHTML = `
+    <div class="result-card">
+      <div class="result-header">
+        <span class="verdict-badge ${vClass}">${vText}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700;letter-spacing:0.5px">
+          ${ru ? '✓ ПОЛНЫЙ ДОСТУП' : '✓ FULL ACCESS'}
+        </span>
+      </div>
+      ${renderDiagnosisCard(diagnosis)}
+      <div class="result-body">${renderMarkdown(body)}</div>
+      <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+        <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
+          📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
+        </button>
+        <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+          📄 ${ru ? 'Скачать PDF' : 'Download PDF'}
+        </button>
+        <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}', this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+          📋 ${ru ? 'Скопировать' : 'Copy'}
+        </button>
+        <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px;border-color:var(--accent);color:var(--accent)">
+          🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}
+        </button>
+      </div>
+      <div class="cta-box">
+        <div>
+          <div class="cta-box-text">${T[lang].ctaText}</div>
+          <div class="cta-box-sub">${T[lang].ctaSub}</div>
+        </div>
+        <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" class="cta-link">${T[lang].ctaBtn}</a>
+      </div>
+    </div>`;
+  resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Show analyzer if returning user still has analyses left
@@ -1031,6 +1187,92 @@ async function processFile(file) {
   }
 }
 
+// ── Diagnosis extraction (parses the JSON header the AI emits) ──
+// Returns { diagnosis, body } — diagnosis is the parsed JSON (or null on failure),
+// body is the markdown analysis with the JSON block stripped out.
+function extractDiagnosis(text) {
+  const m = text.match(/<DIAGNOSIS_JSON>\s*([\s\S]*?)\s*<\/DIAGNOSIS_JSON>/);
+  if (!m) return { diagnosis: null, body: text };
+  try {
+    const diagnosis = JSON.parse(m[1]);
+    const body = text.replace(m[0], '').trim();
+    return { diagnosis, body };
+  } catch (e) {
+    // Malformed JSON: log but never fail the whole flow — fall back to markdown only
+    console.warn('[diagnosis] JSON parse failed, falling back to markdown only:', e);
+    return { diagnosis: null, body: text.replace(m[0], '').trim() };
+  }
+}
+
+function escapeHtmlText(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+
+// Free-tier diagnosis card: shows category + label + $ per issue, plus a summary line.
+function renderDiagnosisCard(diag) {
+  const ru = lang === 'ru';
+  if (!diag || !Array.isArray(diag.issues) || diag.issues.length === 0) {
+    return '<div class="diagnosis-card"><div class="diagnosis-clean">'
+      + (ru ? '✅ Сделка выглядит чисто — серьёзных проблем не обнаружено.'
+            : '✅ Deal looks clean — no serious issues found.')
+      + '</div></div>';
+  }
+  const sevIcon = { critical: '🔴', moderate: '🟡', minor: '🟢' };
+  const issuesHtml = diag.issues.map((i) => `
+    <div class="diag-issue">
+      <div class="diag-issue-head">
+        <span class="diag-icon">${sevIcon[i.severity] || '⚠️'}</span>
+        ${i.category ? '<span class="diag-category">' + escapeHtmlText(i.category) + '</span>' : ''}
+        ${i.dollarAmount > 0 ? '<span class="diag-amount">~$' + i.dollarAmount.toLocaleString() + '</span>' : ''}
+      </div>
+      <div class="diag-label">${escapeHtmlText(i.label)}</div>
+    </div>
+  `).join('');
+  const totalLine = diag.totalOverpay > 0
+    ? ' <span class="muted">·</span> ~$' + diag.totalOverpay.toLocaleString() + ' '
+      + (ru ? 'возможной переплаты' : 'in potential overpayment')
+    : '';
+  return `<div class="diagnosis-card">
+    <div class="diagnosis-summary">
+      ${diag.issues.length} ${ru ? (diag.issues.length === 1 ? 'проблема найдена' : 'проблем(ы) найдено') : (diag.issues.length === 1 ? 'issue found' : 'issues found')}${totalLine}
+    </div>
+    <div class="diagnosis-issues">${issuesHtml}</div>
+  </div>`;
+}
+
+// Two-tier paywall card. Both tiers point to the existing Stripe link for now;
+// swap STRIPE_9_URL / STRIPE_49_URL below once Vlad creates the new products.
+function renderPaywallCard() {
+  const ru = lang === 'ru';
+  const STRIPE_9_URL  = 'https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00';  // TODO: replace with $9 Stripe link
+  const STRIPE_49_URL = 'https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00';  // TODO: replace with $49 Stripe link
+  return `<div class="paywall-card" id="paywall-card">
+    <div class="paywall-head">
+      🔒 ${ru ? 'Это была быстрая проверка — откройте полный разбор' : 'That was the quick check — unlock the full breakdown'}
+    </div>
+    <div class="paywall-sub">
+      ${ru
+        ? 'Покажу ПОЧЕМУ каждая проблема — это проблема, какая должна быть честная цена, и дам точные слова для дилера. Без воды.'
+        : 'I\'ll show you WHY each issue is a problem, what the fair price should actually be, and give you the exact words to use with the dealer. No fluff.'}
+    </div>
+    <div class="paywall-tiers">
+      <a href="${STRIPE_9_URL}" target="_blank" class="paywall-tier">
+        <div class="tier-price">$9</div>
+        <div class="tier-title">${ru ? 'Полный разбор' : 'Full Breakdown'}</div>
+        <div class="tier-detail">${ru ? 'Все объяснения · скрипты для дилера · PDF' : 'All explanations · dealer scripts · PDF export'}</div>
+      </a>
+      <a href="${STRIPE_49_URL}" target="_blank" class="paywall-tier paywall-tier-premium">
+        <span class="tier-badge">${ru ? 'Рекомендую' : 'Best value'}</span>
+        <div class="tier-price">$49</div>
+        <div class="tier-title">${ru ? '+ Звонок со мной' : '+ Call with me'}</div>
+        <div class="tier-detail">${ru ? 'Всё из $9 · 15 минут 1-на-1 с Владом · Calendly' : 'Everything in $9 · 15 min 1-on-1 with Vlad · Calendly'}</div>
+      </a>
+    </div>
+  </div>`;
+}
+
 function renderMarkdown(text) {
   let s = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   s = s.replace(/^### (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin:1.2rem 0 0.4rem">$1</div>');
@@ -1184,7 +1426,39 @@ Always include this section. Show the real money at stake:
 Score: X/10 (be honest — 10 is unicorn deal, 5 is average, below 4 = problems)
 ✅ Хорошо / Good: [list]
 🔧 Исправить до подписания / Fix before signing: [list with dollar savings for each]
-📌 Итог / Bottom line: Sign it / Negotiate first / Walk away`;
+📌 Итог / Bottom line: Sign it / Negotiate first / Walk away
+
+═══════════════════════════════════════
+STEP 4 — DIAGNOSIS HEADER (CRITICAL — DO THIS LAST)
+═══════════════════════════════════════
+At the VERY START of your response, BEFORE everything else, output a structured diagnosis block that summarizes the issues you found. This powers the free-tier preview. Format exactly:
+
+<DIAGNOSIS_JSON>
+{
+  "verdict": "good" | "warn" | "danger",
+  "score": <integer 1-10>,
+  "totalOverpay": <integer dollars, sum of all dollar amounts at stake; 0 if clean deal>,
+  "issues": [
+    {
+      "severity": "critical" | "moderate" | "minor",
+      "category": "<short category, ${lang === 'ru' ? 'на русском' : 'in English'}, e.g. 'Доп. услуга' / 'Add-on', 'Комиссия' / 'Fee', 'Цена' / 'Price', 'APR/Money Factor', 'Trade-in', 'Срок'>",
+      "label": "<short specific issue label, ${lang === 'ru' ? 'на русском' : 'in English'}, max 60 chars — must be SPECIFIC to THIS deal (e.g. 'Doc fee $699 — market ~$150', NOT 'Doc fee overpriced')>",
+      "dollarAmount": <integer dollars at stake for this issue; 0 if not quantifiable>
+    }
+    // 0–8 items. Only REAL issues with dollar evidence in THIS document. No filler.
+  ]
+}
+</DIAGNOSIS_JSON>
+
+After this JSON block, output the full markdown analysis EXACTLY as specified in STEPS 1–3 above.
+
+CRITICAL RULES for the diagnosis JSON:
+- Issue labels MUST be specific to the user's actual numbers — never generic ("3 red flags found" is BAD, "Doc fee $699 vs market $150" is GOOD).
+- If the deal is clean, return issues: [] and totalOverpay: 0. Do NOT invent issues.
+- totalOverpay = sum of all dollarAmount values.
+- The JSON must be valid parseable JSON. No trailing commas. No comments.
+- Severity rules: critical = $500+ at stake, moderate = $100-500, minor = <$100.
+- The JSON block is REQUIRED — without it the free-tier view breaks.`;
 }
 
 function buildExtractionSystem() {
@@ -1414,15 +1688,36 @@ async function runFullAnalysis() {
     const text = data.content?.map(b => b.text||'').join('') || '';
     if (!text) throw new Error('Empty response from AI');
 
-    window.lastAnalysisText = text;
-    window.lastConfirmedData = confirmed;
+    // Split AI output into the structured diagnosis header and the markdown body
+    const { diagnosis, body } = extractDiagnosis(text);
 
-    const up = text.toUpperCase();
+    // Persist BOTH the raw text (for PDF/email features) and the parsed diagnosis,
+    // so that after the user pays and returns with ?paid=true we can re-render
+    // without forcing them to re-paste their deal.
+    window.lastAnalysisText  = body;
+    window.lastDiagnosis     = diagnosis;
+    window.lastConfirmedData = confirmed;
+    try {
+      sessionStorage.setItem('lastAnalysisBody', body);
+      sessionStorage.setItem('lastDiagnosis', diagnosis ? JSON.stringify(diagnosis) : '');
+    } catch (_) { /* sessionStorage may be full — fine, we just lose persistence */ }
+
+    // Verdict: prefer the JSON's explicit verdict; fall back to text heuristics
     let vClass = 'verdict-warning', vText = T[lang].warn;
-    if (up.includes('ХОРОШО') || up.includes('LOOKS GOOD') || up.includes('ВЫГЛЯДИТ НОРМАЛЬНО') || up.includes('REASONABLE')) { vClass='verdict-good'; vText=T[lang].good; }
-    if (up.includes('КРАСНЫЕ ФЛАГИ') || up.includes('RED FLAGS') || up.includes('СТОП') || up.includes('WALK AWAY')) { vClass='verdict-danger'; vText=T[lang].danger; }
+    if (diagnosis && diagnosis.verdict) {
+      if (diagnosis.verdict === 'good')   { vClass = 'verdict-good';   vText = T[lang].good; }
+      if (diagnosis.verdict === 'danger') { vClass = 'verdict-danger'; vText = T[lang].danger; }
+    } else {
+      const up = body.toUpperCase();
+      if (up.includes('ХОРОШО') || up.includes('LOOKS GOOD') || up.includes('ВЫГЛЯДИТ НОРМАЛЬНО') || up.includes('REASONABLE')) { vClass='verdict-good'; vText=T[lang].good; }
+      if (up.includes('КРАСНЫЕ ФЛАГИ') || up.includes('RED FLAGS') || up.includes('СТОП') || up.includes('WALK AWAY')) { vClass='verdict-danger'; vText=T[lang].danger; }
+    }
 
     const ru = lang === 'ru';
+    const paid = paidAnalyses > 0;
+    const prescriptionClass = paid ? '' : 'prescription-locked';
+    const teaserHtml = paid ? '' : `<div class="prescription-teaser">${ru ? '🔒 Полный разбор — заблокирован' : '🔒 Full breakdown — locked'}</div>`;
+
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
         <div class="print-header" style="display:none">
@@ -1432,8 +1727,14 @@ async function runFullAnalysis() {
         <div class="result-header">
           <span class="verdict-badge ${vClass}">${vText}</span>
         </div>
-        <div class="result-body">${renderMarkdown(text)}</div>
+        ${renderDiagnosisCard(diagnosis)}
+        ${teaserHtml}
+        <div class="${prescriptionClass}">
+          <div class="result-body prescription-body">${renderMarkdown(body)}</div>
+        </div>
+        ${!paid ? renderPaywallCard() : ''}
         <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          ${paid ? `
           <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
             📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
           </button>
@@ -1442,7 +1743,7 @@ async function runFullAnalysis() {
           </button>
           <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}', this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
             📋 ${ru ? 'Скопировать' : 'Copy'}
-          </button>
+          </button>` : ''}
           <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px;border-color:var(--accent);color:var(--accent)">
             🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}
           </button>
@@ -1877,6 +2178,8 @@ function shareWithRef(btn) {
 }
 
 function appendPaywall() {
+  // Skip if a paywall card is already on the page (the new diagnosis flow renders one inline)
+  if (document.getElementById('paywall-card')) return;
   // Don't hide the result - just append paywall below it
   const resultArea = document.getElementById('result-area');
   const paywallDiv = document.createElement('div');
