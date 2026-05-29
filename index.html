@@ -858,6 +858,32 @@ let processedBase64_b = null;
 let processedMime_b = 'image/jpeg';
 let isPdf_b = false;
 let analysisCount = parseInt(sessionStorage.getItem('analysisCount') || '0');
+
+// ── DEV MODE ──────────────────────────────────────────────────────────────
+// Visit ?dev=KEY once to enroll this browser as a dev/testing client.
+// In dev mode: skip email modal, skip paywall (auto-paid), and send
+// x-dev-key on /api/analyze + /api/collect-email so the backend skips
+// rate-limit and lead storage.
+// To turn off: visit ?dev=off.
+(function devModeInit() {
+  const params = new URLSearchParams(window.location.search);
+  const devParam = params.get('dev');
+  if (devParam === 'off') {
+    localStorage.removeItem('devKey');
+  } else if (devParam) {
+    localStorage.setItem('devKey', devParam);
+  }
+  // Always strip ?dev= from the URL so the secret doesn't end up in screenshots,
+  // history, or referrer headers.
+  if (devParam !== null) {
+    params.delete('dev');
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+  }
+})();
+function getDevKey() { return localStorage.getItem('devKey') || ''; }
+function isDev() { return !!getDevKey(); }
 // Paid status persists across browser sessions — closing the tab shouldn't
 // "forget" a paid purchase. Migrate any legacy sessionStorage value once.
 (function migratePaidAnalyses() {
@@ -1036,6 +1062,16 @@ function renderUnlockedAnalysis(body, diagnosis) {
 window.addEventListener("DOMContentLoaded", function() {
   showAnalyzer();
   animateCounter(getGlobalCount());
+
+  // Dev banner — visible reminder that gates are bypassed and traffic is
+  // tagged as dev (so collect-email + rate limit are skipped server-side).
+  if (isDev()) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fff;padding:8px 16px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-align:center;border-top:2px solid #ea580c';
+    bar.innerHTML = '🛠 DEV MODE — email modal, paywall &amp; rate limit bypassed. ' +
+      '<a href="?dev=off" style="color:#fed7aa;margin-left:8px;text-decoration:underline">turn off</a>';
+    document.body.appendChild(bar);
+  }
 
   // Show referral bonus banner if they arrived via a ref link
   if (refBonus && new URLSearchParams(window.location.search).get('ref')) {
@@ -1589,7 +1625,8 @@ async function analyzeDeal() {
   // Email capture — show once; skipping is fine
   // v2 gate: require firstName/lastName/phone too. Legacy 'capturedEmail' from before
   // the required-fields refactor doesn't satisfy this — those users need to re-fill.
-  if (!localStorage.getItem('capturedLead_v2')) {
+  // Dev mode bypasses the modal entirely so you can test the analyze flow rapidly.
+  if (!isDev() && !localStorage.getItem('capturedLead_v2')) {
     showEmailCapture(() => analyzeDeal());
     return;
   }
@@ -1621,7 +1658,7 @@ async function analyzeDeal() {
 
     const resp = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 500,
@@ -1785,7 +1822,7 @@ async function runFullAnalysis() {
 
     const resp = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2500,
@@ -1825,7 +1862,7 @@ async function runFullAnalysis() {
     }
 
     const ru = lang === 'ru';
-    const paid = paidAnalyses > 0;
+    const paid = paidAnalyses > 0 || isDev();
     const prescriptionClass = paid ? '' : 'prescription-locked';
     const teaserHtml = paid ? '' : `<div class="prescription-teaser">${ru ? '🔒 Полный разбор — заблокирован' : '🔒 Full breakdown — locked'}</div>`;
 
@@ -1912,7 +1949,7 @@ async function generateEmail() {
   try {
     const resp = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 500,
@@ -2097,7 +2134,7 @@ async function compareDeal() {
 
     const resp = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2500,
@@ -2114,7 +2151,7 @@ async function compareDeal() {
     // paid users get the full comparison + action buttons.
     window.lastAnalysisText = text;
     try { sessionStorage.setItem('lastAnalysisBody', text); sessionStorage.setItem('lastDiagnosis', ''); } catch (_) {}
-    const paid = paidAnalyses > 0;
+    const paid = paidAnalyses > 0 || isDev();
     const prescriptionClass = paid ? '' : 'prescription-locked';
     const teaserHtml = paid ? '' : `<div class="prescription-teaser">${ru ? '🔒 Полное сравнение — заблокировано' : '🔒 Full comparison — locked'}</div>`;
     document.getElementById('result-area').innerHTML = `
@@ -2249,7 +2286,7 @@ async function submitCapturedEmail() {
   try {
     await fetch('/api/collect-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
       body: JSON.stringify({
         firstName,
         lastName,

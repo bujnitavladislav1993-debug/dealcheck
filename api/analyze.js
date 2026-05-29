@@ -18,7 +18,11 @@ export default async function handler(req, res) {
     'unknown'
   ).split(',')[0].trim();
 
-  if (isFullAnalysis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  // Dev/testing bypass — when DEV_KEY env var is set and the request header matches,
+  // skip rate limiting entirely. Used by the developer browser via ?dev=KEY.
+  const isDevRequest = process.env.DEV_KEY && req.headers['x-dev-key'] === process.env.DEV_KEY;
+
+  if (!isDevRequest && isFullAnalysis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     try {
       const base  = process.env.UPSTASH_REDIS_REST_URL;
       const token = process.env.UPSTASH_REDIS_REST_TOKEN;
