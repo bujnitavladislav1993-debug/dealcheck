@@ -736,7 +736,7 @@
 <div class="payment-section" id="payment-section" style="display:none">
   <div class="payment-title" id="pay-title"></div>
   <div class="payment-methods">
-    <a href="https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00" target="_blank" class="pay-btn primary">Card / Stripe</a>
+    <a href="https://buy.stripe.com/8x2bJ04IQ6Au3Fg1J0bbG01" target="_blank" class="pay-btn primary">Card / Stripe</a>
   </div>
   <div class="payment-note" id="pay-note"></div>
 </div>
@@ -908,13 +908,19 @@ function isUnlocked() {
   return analysisCount < (1 + refBonus);
 }
 
-// Auto-unlock if returning from Stripe payment
+// Auto-unlock if returning from Stripe payment.
+// $49 tier's Stripe success URL adds &tier=49 — we use that to show a
+// "book your consultation" Calendly card on top of the unlocked analysis.
 if (window.location.search.includes("paid=true")) {
   paidAnalyses = 1;
   localStorage.setItem('paidAnalyses', '1');
   // Reset count so they get fresh 3 analyses
   analysisCount = 0;
   sessionStorage.setItem('analysisCount', '0');
+  // Remember the tier so it survives a refresh — the URL param goes away once
+  // we clean it up below.
+  const purchasedTier = new URLSearchParams(window.location.search).get('tier') === '49' ? '49' : '9';
+  localStorage.setItem('purchasedTier', purchasedTier);
   window.addEventListener("DOMContentLoaded", function() {
     // skipScroll so we land on the restored full analysis, not the upload zone
     showAnalyzer({ skipScroll: true });
@@ -927,8 +933,35 @@ if (window.location.search.includes("paid=true")) {
         const diagnosis = diagStr ? JSON.parse(diagStr) : null;
         renderUnlockedAnalysis(body, diagnosis);
       }
+      // $49 buyers get a prominent consultation booking card on top
+      if (purchasedTier === '49') showConsultationCTA();
     } catch (e) { /* if anything goes wrong, just show the empty analyzer */ }
   });
+}
+
+// Calendly booking card shown to $49 tier buyers immediately after payment.
+// Anchored at the top of #result-area so it's the first thing they see.
+function showConsultationCTA() {
+  const ru = lang === 'ru';
+  const area = document.getElementById('result-area');
+  if (!area) return;
+  const card = document.createElement('div');
+  card.style.cssText = 'margin:0 0 1.25rem;background:linear-gradient(180deg,var(--accent-dim),var(--surface));border:1px solid var(--accent);border-radius:var(--radius-lg);padding:1.5rem 1.25rem;text-align:center;';
+  card.innerHTML = `
+    <div style="font-size:1.6rem;margin-bottom:0.6rem">📅</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:var(--text);margin-bottom:0.4rem">
+      ${ru ? 'Спасибо! Теперь забронируйте звонок со мной' : 'Thanks! Now book your call with me'}
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.5">
+      ${ru
+        ? '15 минут 1-на-1 — разберём вашу сделку лично и решим что делать дальше.'
+        : '15 min 1-on-1 — we\'ll go through your deal together and decide what to do next.'}
+    </div>
+    <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
+      style="display:inline-block;padding:13px 28px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;border-radius:var(--radius);text-decoration:none">
+      ${ru ? 'Выбрать время →' : 'Pick a time →'}
+    </a>`;
+  area.insertBefore(card, area.firstChild);
 }
 
 // Render an already-completed analysis with the prescription fully unlocked.
@@ -1307,12 +1340,13 @@ function renderDiagnosisCard(diag) {
   </div>`;
 }
 
-// Two-tier paywall card. Both tiers point to the existing Stripe link for now;
-// swap STRIPE_9_URL / STRIPE_49_URL below once Vlad creates the new products.
+// Two-tier paywall card. Each tier has its own Stripe product so checkout
+// shows the correct amount and we can distinguish $9 vs $49 buyers on return
+// (the $49 Stripe link's success URL must include `?paid=true&tier=49`).
 function renderPaywallCard() {
   const ru = lang === 'ru';
-  const STRIPE_9_URL  = 'https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00';  // TODO: replace with $9 Stripe link
-  const STRIPE_49_URL = 'https://buy.stripe.com/6oU8wO6QYbUOb7I1J0bbG00';  // TODO: replace with $49 Stripe link
+  const STRIPE_9_URL  = 'https://buy.stripe.com/8x2bJ04IQ6Au3Fg1J0bbG01';  // $9  — Full Breakdown
+  const STRIPE_49_URL = 'https://buy.stripe.com/bJe3cu7V2cYSgs2bjAbbG02';  // $49 — + 15-min consultation
   return `<div class="paywall-card" id="paywall-card">
     <div class="paywall-head">
       🔒 ${ru ? 'Это была быстрая проверка — откройте полный разбор' : 'That was the quick check — unlock the full breakdown'}
