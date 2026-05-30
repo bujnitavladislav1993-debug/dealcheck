@@ -1084,7 +1084,8 @@ window.addEventListener("DOMContentLoaded", function() {
           bar.innerHTML = '🛠 DEV MODE — email modal, paywall &amp; rate limit bypassed. ' + turnOff;
         } else {
           bar.style.background = '#7f1d1d';
-          bar.innerHTML = '⚠️ DEV KEY НЕ РАБОТАЕТ — сервер не принимает ключ (DEV_KEY не задан или не совпадает). Гейты НЕ обойдены. ' + turnOff;
+          const diag = `[envSet:${d?.envSet} envLen:${d?.envLen} sentLen:${d?.sentLen} sent:${d?.sentEdge}]`;
+          bar.innerHTML = '⚠️ DEV KEY НЕ РАБОТАЕТ ' + diag + ' ' + turnOff;
         }
       })
       .catch(() => {

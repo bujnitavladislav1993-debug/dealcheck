@@ -29,7 +29,15 @@ export default async function handler(req, res) {
   // Lightweight dev-key check — lets the client confirm the bypass actually works
   // server-side (DEV_KEY set AND matching) without spending an Anthropic call.
   if (req.body?.devcheck) {
-    return res.status(200).json({ dev: !!isDevRequest });
+    // Diagnostic-only: lengths (not values) + first/last char of the SENT key so
+    // a mismatch can be pinpointed without leaking the secret. Safe to expose.
+    return res.status(200).json({
+      dev: !!isDevRequest,
+      envSet: envDevKey.length > 0,
+      envLen: envDevKey.length,
+      sentLen: sentDevKey.length,
+      sentEdge: sentDevKey ? sentDevKey[0] + '…' + sentDevKey[sentDevKey.length - 1] : ''
+    });
   }
 
   if (!isDevRequest && isFullAnalysis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
