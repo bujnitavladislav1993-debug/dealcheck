@@ -20,7 +20,11 @@ export default async function handler(req, res) {
 
   // Dev/testing bypass — when DEV_KEY env var is set and the request header matches,
   // skip rate limiting entirely. Used by the developer browser via ?dev=KEY.
-  const isDevRequest = process.env.DEV_KEY && req.headers['x-dev-key'] === process.env.DEV_KEY;
+  // Trim both sides — a trailing space/newline pasted into the Vercel env value
+  // (or the URL) is the most common reason a correct-looking key fails to match.
+  const sentDevKey = (req.headers['x-dev-key'] || '').trim();
+  const envDevKey  = (process.env.DEV_KEY || '').trim();
+  const isDevRequest = envDevKey.length > 0 && sentDevKey === envDevKey;
 
   // Lightweight dev-key check — lets the client confirm the bypass actually works
   // server-side (DEV_KEY set AND matching) without spending an Anthropic call.
