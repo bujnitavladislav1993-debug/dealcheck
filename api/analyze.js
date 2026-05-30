@@ -22,6 +22,12 @@ export default async function handler(req, res) {
   // skip rate limiting entirely. Used by the developer browser via ?dev=KEY.
   const isDevRequest = process.env.DEV_KEY && req.headers['x-dev-key'] === process.env.DEV_KEY;
 
+  // Lightweight dev-key check — lets the client confirm the bypass actually works
+  // server-side (DEV_KEY set AND matching) without spending an Anthropic call.
+  if (req.body?.devcheck) {
+    return res.status(200).json({ dev: !!isDevRequest });
+  }
+
   if (!isDevRequest && isFullAnalysis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     try {
       const base  = process.env.UPSTASH_REDIS_REST_URL;
@@ -67,9 +73,20 @@ export default async function handler(req, res) {
       body: JSON.stringify(req.body),
     });
 
-    const data = await response.json();
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (_) {
+      // Anthropic (or an upstream proxy) returned non-JSON — usually an HTML/text
+      // error page on 5xx. Wrap it so the client always gets a usable error.message.
+      return res.status(response.status || 502).json({
+        error: { message: (raw || 'Upstream returned a non-JSON response').slice(0, 300) }
+      });
+    }
     return res.status(response.status).json(data);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    // fetch itself failed (network, timeout abort, etc.)
+    return res.status(500).json({ error: { message: error.message } });
   }
 }

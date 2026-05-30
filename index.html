@@ -1068,9 +1068,29 @@ window.addEventListener("DOMContentLoaded", function() {
   if (isDev()) {
     const bar = document.createElement('div');
     bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fff;padding:8px 16px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-align:center;border-top:2px solid #ea580c';
-    bar.innerHTML = '🛠 DEV MODE — email modal, paywall &amp; rate limit bypassed. ' +
-      '<a href="?dev=off" style="color:#fed7aa;margin-left:8px;text-decoration:underline">turn off</a>';
+    const turnOff = '<a href="?dev=off" style="color:#fed7aa;margin-left:8px;text-decoration:underline">turn off</a>';
+    bar.innerHTML = '🛠 DEV MODE — проверяю ключ… ' + turnOff;
     document.body.appendChild(bar);
+    // Confirm the key actually works server-side — the banner must not claim a
+    // bypass that the backend will reject (DEV_KEY missing or key mismatch).
+    fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dev-key': getDevKey() },
+      body: JSON.stringify({ devcheck: true })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.dev) {
+          bar.innerHTML = '🛠 DEV MODE — email modal, paywall &amp; rate limit bypassed. ' + turnOff;
+        } else {
+          bar.style.background = '#7f1d1d';
+          bar.innerHTML = '⚠️ DEV KEY НЕ РАБОТАЕТ — сервер не принимает ключ (DEV_KEY не задан или не совпадает). Гейты НЕ обойдены. ' + turnOff;
+        }
+      })
+      .catch(() => {
+        bar.style.background = '#7f1d1d';
+        bar.innerHTML = '⚠️ DEV MODE — не удалось проверить ключ (сеть). ' + turnOff;
+      });
   }
 
   // Show referral bonus banner if they arrived via a ref link
