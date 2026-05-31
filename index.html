@@ -1364,18 +1364,16 @@ async function heicToJpeg(file) {
   return Array.isArray(blob) ? blob[0] : blob;
 }
 
-async function compressImage(file, maxW, maxH, quality) {
-  // HEIC inputs must be converted before the <img> element can decode them.
-  if (isHeicFile(file)) {
-    try { file = await heicToJpeg(file); }
-    catch (e) { throw new Error('HEIC conversion failed: ' + e.message); }
-  }
+// Draw an already-decodable image Blob/File onto the canvas and return JPEG base64.
+// Rejects if the browser can't decode it (img.onerror) or produces a 0×0 image.
+function drawToJpegBase64(blob, maxW, maxH, quality) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let w = img.width, h = img.height;
+      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      if (!w || !h) { reject(new Error('zero-dimension')); return; }
       if (w > maxW || h > maxH) {
         const r = Math.min(maxW/w, maxH/h);
         w = Math.round(w*r); h = Math.round(h*r);
@@ -1383,11 +1381,37 @@ async function compressImage(file, maxW, maxH, quality) {
       const canvas = document.getElementById('compress-canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+      try { resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]); }
+      catch (e) { reject(e); }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode-failed')); };
     img.src = url;
   });
+}
+
+async function compressImage(file, maxW, maxH, quality) {
+  // 1) Try a NATIVE decode first. Safari/iOS decode HEIC directly in <img>/canvas,
+  //    so iPhone users (most of our traffic) never touch the heavier JS converter,
+  //    which bundles an old libheif that fails on modern "grid" iPhone HEIC.
+  try {
+    return await drawToJpegBase64(file, maxW, maxH, quality);
+  } catch (nativeErr) {
+    // 2) Native decode failed. On Chrome/Firefox this is expected for HEIC — convert
+    //    with heic2any, then retry the canvas draw on the resulting JPEG.
+    if (isHeicFile(file)) {
+      let converted;
+      try {
+        converted = await heicToJpeg(file);
+      } catch (convErr) {
+        console.warn('[heic] conversion failed:', convErr && convErr.message);
+        throw new Error('HEIC conversion failed: ' + (convErr && convErr.message));
+      }
+      return await drawToJpegBase64(converted, maxW, maxH, quality);
+    }
+    // Not HEIC and still couldn't decode → genuinely unreadable (corrupt/unsupported).
+    console.warn('[img] native decode failed:', nativeErr && nativeErr.message);
+    throw nativeErr;
+  }
 }
 
 async function processFile(file) {
@@ -1416,6 +1440,7 @@ async function processFile(file) {
   } catch(err) {
     // Real failure (corrupt file, network for heic2any, etc.) — surface a clear
     // error instead of silently lying about mime type to Anthropic.
+    console.error('[processFile] image processing failed:', err && err.message, err);
     processedBase64 = null;
     const ru = lang === 'ru';
     preview.innerHTML = `<div class="error-msg">${ru
@@ -1458,7 +1483,12 @@ function renderExtraPageSlots() {
             const data = await compressImage(f, 1800, 1800, 0.85);
             extraImages.push({ data, mime: 'image/jpeg', isPdf: false });
           }
-        } catch(_) {}
+        } catch(err) {
+          console.error('[extra-page] processing failed:', err && err.message, err);
+          alert(lang==='ru'
+            ? 'Не удалось обработать эту страницу. Попробуйте JPEG или PDF.'
+            : 'Could not process that page. Try a JPEG or PDF.');
+        }
         renderExtraPageSlots();
       };
       inp.click();
@@ -2341,6 +2371,7 @@ async function processFileB(file) {
     preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal B"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
   } catch(err) {
     // Real failure — surface a clear error instead of sending wrong-mime bytes to AI.
+    console.error('[processFileB] image processing failed:', err && err.message, err);
     processedBase64_b = null;
     const ru = lang === 'ru';
     preview.innerHTML = `<div class="error-msg">${ru
