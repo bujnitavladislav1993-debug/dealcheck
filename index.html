@@ -4,6 +4,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DealCheck by Vlad — Проверка автомобильной сделки</title>
 <meta name="description" content="AI проверка вашей сделки — лизинг, кредит, наличные, контракт. Найдём красные флаги до подписания.">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DealCheck">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
 
@@ -628,6 +634,9 @@
     .payment-methods { grid-template-columns: 1fr; }
     .deal-types { grid-template-columns: repeat(2, 1fr); }
     .cta-box { flex-direction: column; text-align: center; }
+    .trust-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.25rem 1.5rem; }
+    .trust-item { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .trust-item .num { font-size: 1.2rem; }
   }
 
   /* ── PRINT / PDF REPORT ───────────────────────────────────── */
@@ -700,6 +709,26 @@
     margin: 0 0 1rem; animation: slideUp 0.3s ease;
   }
 </style>
+<!-- heic2any: in-browser HEIC→JPEG conversion so iPhone photos work
+     (browsers can't decode HEIC natively in <img> or canvas). Loaded
+     lazily — only fetched if the user actually uploads a HEIC file. -->
+<script>
+  window.ensureHeic2any = (function() {
+    let p = null;
+    return function () {
+      if (window.heic2any) return Promise.resolve(window.heic2any);
+      if (p) return p;
+      p = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+        s.onload  = () => resolve(window.heic2any);
+        s.onerror = () => { p = null; reject(new Error('Failed to load HEIC converter')); };
+        document.head.appendChild(s);
+      });
+      return p;
+    };
+  })();
+</script>
 </head>
 <body>
 
@@ -784,6 +813,7 @@
       <div class="upload-sub" id="upload-sub">Просто загрузи файл сюда или напиши цифры вручную ниже</div>
     </div>
     <div class="preview-area" id="preview-area"></div>
+    <div id="extra-pages-container"></div>
 
     <!-- DEAL B upload (compare mode only) -->
     <div id="deal-b-section" style="display:none;margin-top:1rem">
@@ -854,6 +884,7 @@ let compareMode = false;
 let processedBase64 = null;
 let processedMime = 'image/jpeg';
 let isPdf = false;
+let extraImages = []; // additional pages for single analysis mode (up to 2 more)
 let processedBase64_b = null;
 let processedMime_b = 'image/jpeg';
 let isPdf_b = false;
@@ -901,15 +932,10 @@ if (new URLSearchParams(window.location.search).get('ref')) {
 }
 let refBonus = parseInt(sessionStorage.getItem('refBonus') || '0');
 
-// Global deal counter — seeds at 847, grows in localStorage
+// Global deal counter — real count from Upstash Redis, localStorage fallback
 const COUNTER_SEED = 847;
-function getGlobalCount() {
+function getLocalCount() {
   return parseInt(localStorage.getItem('globalDealCount') || COUNTER_SEED);
-}
-function incrementGlobalCount() {
-  const next = getGlobalCount() + 1;
-  localStorage.setItem('globalDealCount', next);
-  animateCounter(next);
 }
 function animateCounter(target) {
   const el = document.getElementById('deals-counter');
@@ -921,6 +947,24 @@ function animateCounter(target) {
     if (current < target) { current++; requestAnimationFrame(step); }
   };
   requestAnimationFrame(step);
+}
+async function fetchGlobalCount() {
+  try {
+    const r = await fetch('/api/counter');
+    const d = await r.json();
+    if (d.count) { animateCounter(d.count); return; }
+  } catch (_) {}
+  animateCounter(getLocalCount());
+}
+async function incrementGlobalCount() {
+  try {
+    const r = await fetch('/api/counter', { method: 'POST' });
+    const d = await r.json();
+    if (d.count) { animateCounter(d.count); return; }
+  } catch (_) {}
+  const next = getLocalCount() + 1;
+  localStorage.setItem('globalDealCount', next);
+  animateCounter(next);
 }
 
 function getRemainingAnalyses() {
@@ -1046,13 +1090,7 @@ function renderUnlockedAnalysis(body, diagnosis) {
         </button>
       </div>
       ${dangerBlock}
-      <div class="cta-box">
-        <div>
-          <div class="cta-box-text">${T[lang].ctaText}</div>
-          <div class="cta-box-sub">${T[lang].ctaSub}</div>
-        </div>
-        <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" class="cta-link">${T[lang].ctaBtn}</a>
-      </div>
+      ${buildCtaBox(diagnosis, lang)}
     </div>`;
   resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1061,16 +1099,16 @@ function renderUnlockedAnalysis(body, diagnosis) {
 // First check is free; the post-analysis paywall handles monetization.
 window.addEventListener("DOMContentLoaded", function() {
   showAnalyzer();
-  animateCounter(getGlobalCount());
+  fetchGlobalCount();
 
   // Dev banner — visible reminder that gates are bypassed and traffic is
   // tagged as dev (so collect-email + rate limit are skipped server-side).
   if (isDev()) {
     const bar = document.createElement('div');
-    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fff;padding:8px 16px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-align:center;border-top:2px solid #ea580c';
+    bar.style.cssText = 'position:sticky;top:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fff;padding:8px 16px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-align:center;border-bottom:2px solid #ea580c';
     const turnOff = '<a href="?dev=off" style="color:#fed7aa;margin-left:8px;text-decoration:underline">turn off</a>';
     bar.innerHTML = '🛠 DEV MODE — проверяю ключ… ' + turnOff;
-    document.body.appendChild(bar);
+    document.body.insertBefore(bar, document.body.firstChild);
     // Confirm the key actually works server-side — the banner must not claim a
     // bypass that the backend will reject (DEV_KEY missing or key mismatch).
     fetch('/api/analyze', {
@@ -1106,6 +1144,51 @@ window.addEventListener("DOMContentLoaded", function() {
     if (paySection) paySection.parentNode.insertBefore(banner, paySection.nextSibling);
   }
 });
+
+// ── Contact links — update Telegram handle if different ──────────────────────
+const CONTACT = {
+  instagram: 'https://www.instagram.com/pereprodavec_usa/',
+  telegram:  'https://t.me/pereprodavec_usa',
+  calendly:  'https://calendly.com/cars_with_vlad/new-meeting-2',
+};
+
+// Dynamic CTA based on deal score — drives brokerage leads
+function buildCtaBox(diagnosis, lang) {
+  const ru      = lang === 'ru';
+  const score   = diagnosis?.score || 5;
+  const overpay = diagnosis?.totalOverpay || 0;
+  const verdict = diagnosis?.verdict || 'warn';
+  const fmt     = (n) => '$' + Math.round(n).toLocaleString();
+
+  let text, sub, btn, href;
+  if (verdict === 'danger' || score <= 4) {
+    text = ru ? '🚨 Серьёзные флаги — хотите, я возьму эту сделку?' : '🚨 Serious red flags — want me to handle this deal for you?';
+    sub  = overpay > 0
+      ? (ru ? `Потенциальная переплата: ~${fmt(overpay)}` : `Potential overpayment: ~${fmt(overpay)}`)
+      : (ru ? 'Влад лично разберёт и выторгует лучшие условия.' : 'Vlad will personally negotiate better terms for you.');
+    btn  = ru ? 'Нанять меня →' : 'Hire me →';
+    href = CONTACT.instagram;
+  } else if (score <= 6) {
+    text = overpay > 0
+      ? (ru ? `💸 Вы оставляете ~${fmt(overpay)} на столе` : `💸 You're leaving ~${fmt(overpay)} on the table`)
+      : (ru ? '💸 Есть пространство для переговоров' : '💸 There\'s room to negotiate here');
+    sub  = ru ? 'Я могу выторговать это за вас. Мой гонорар меньше вашей переплаты.' : 'I can negotiate this for you. My fee is less than your overpayment.';
+    btn  = ru ? 'Записаться на звонок →' : 'Book a call →';
+    href = CONTACT.calendly;
+  } else {
+    text = ru ? '✅ Хорошая сделка — на следующую машину обратитесь ко мне заранее' : '✅ Good deal — for your next car, reach out before you visit the dealer';
+    sub  = ru ? '10+ лет в автобизнесе — помогу найти лучшее предложение на рынке.' : '10+ years in the business — I\'ll find you the best deal on the market.';
+    btn  = ru ? 'Связаться →' : 'Get in touch →';
+    href = CONTACT.calendly;
+  }
+  return `<div class="cta-box">
+    <div>
+      <div class="cta-box-text">${text}</div>
+      <div class="cta-box-sub">${sub}</div>
+    </div>
+    <a href="${href}" target="_blank" class="cta-link">${btn}</a>
+  </div>`;
+}
 
 const T = {
   ru: {
@@ -1255,12 +1338,38 @@ function handleFile(e) { const f = e.target.files[0]; if (f) processFile(f); }
 
 function removeFile() {
   processedBase64 = null; isPdf = false;
+  extraImages = [];
   document.getElementById('preview-area').style.display = 'none';
   document.getElementById('preview-area').innerHTML = '';
   document.getElementById('file-input').value = '';
+  const ep = document.getElementById('extra-pages-container');
+  if (ep) ep.innerHTML = '';
 }
 
-function compressImage(file, maxW, maxH, quality) {
+// Detect HEIC/HEIF by mime OR filename — Safari labels them image/heic
+// but Chrome/iOS sometimes leaves type empty and only the extension tells us.
+function isHeicFile(file) {
+  if (!file) return false;
+  const t = (file.type || '').toLowerCase();
+  if (t === 'image/heic' || t === 'image/heif') return true;
+  const n = (file.name || '').toLowerCase();
+  return n.endsWith('.heic') || n.endsWith('.heif');
+}
+
+// Convert HEIC → JPEG Blob so the rest of the pipeline (canvas, AI upload) just works.
+async function heicToJpeg(file) {
+  const heic2any = await window.ensureHeic2any();
+  const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+  // heic2any returns Blob or Blob[]; coerce to single Blob
+  return Array.isArray(blob) ? blob[0] : blob;
+}
+
+async function compressImage(file, maxW, maxH, quality) {
+  // HEIC inputs must be converted before the <img> element can decode them.
+  if (isHeicFile(file)) {
+    try { file = await heicToJpeg(file); }
+    catch (e) { throw new Error('HEIC conversion failed: ' + e.message); }
+  }
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -1305,11 +1414,62 @@ async function processFile(file) {
     const src = 'data:image/jpeg;base64,' + processedBase64;
     preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal document"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
   } catch(err) {
-    preview.innerHTML = `<div class="file-card"><span>📷 ${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
-    const reader = new FileReader();
-    reader.onload = (e) => { processedBase64 = e.target.result.split(',')[1]; processedMime = 'image/jpeg'; };
-    reader.readAsDataURL(file);
+    // Real failure (corrupt file, network for heic2any, etc.) — surface a clear
+    // error instead of silently lying about mime type to Anthropic.
+    processedBase64 = null;
+    const ru = lang === 'ru';
+    preview.innerHTML = `<div class="error-msg">${ru
+      ? `Не удалось обработать «${name}». Попробуйте загрузить JPEG или PDF.`
+      : `Could not process "${name}". Try uploading a JPEG or PDF instead.`}</div>`;
+    document.getElementById('file-input').value = '';
   }
+  // Show "add another page" button if not in compare mode and fewer than 2 extra pages loaded
+  if (!compareMode) renderExtraPageSlots();
+}
+
+function renderExtraPageSlots() {
+  const container = document.getElementById('extra-pages-container');
+  if (!container) return;
+  container.innerHTML = '';
+  extraImages.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px;font-size:13px;color:var(--text-muted)';
+    div.innerHTML = `<span>📄 ${lang==='ru'?'Страница':'Page'} ${i+2}</span><button class="remove-btn" onclick="removeExtraPage(${i})" style="margin-left:auto">✕</button>`;
+    container.appendChild(div);
+  });
+  if (extraImages.length < 2) {
+    const btn = document.createElement('button');
+    btn.className = 'pay-btn';
+    btn.style.cssText = 'width:100%;justify-content:center;margin-bottom:8px;font-size:13px';
+    btn.innerHTML = `➕ ${lang==='ru'?'Добавить страницу документа':'Add another page'}`;
+    btn.onclick = () => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'image/*,.heic,.heif,application/pdf';
+      inp.onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        try {
+          const isP = f.type === 'application/pdf';
+          if (isP) {
+            const data = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(f); });
+            extraImages.push({ data, mime: 'application/pdf', isPdf: true });
+          } else {
+            const data = await compressImage(f, 1800, 1800, 0.85);
+            extraImages.push({ data, mime: 'image/jpeg', isPdf: false });
+          }
+        } catch(_) {}
+        renderExtraPageSlots();
+      };
+      inp.click();
+    };
+    container.appendChild(btn);
+  }
+}
+
+function removeExtraPage(i) {
+  extraImages.splice(i, 1);
+  renderExtraPageSlots();
 }
 
 // ── Diagnosis extraction (parses the JSON header the AI emits) ──
@@ -1483,10 +1643,31 @@ WHY THIS IS CRITICAL: Documents are often photographed at an angle or are blurry
 ═══════════════════════════════════════
 STEP 2 — IDENTIFY LOCATION & DEAL TYPE
 ═══════════════════════════════════════
-DEALER STATE: Find the dealer's address on the document. Read the state.
-⚠️ CRITICAL STATE RULE: Apply ONLY the rules for the state shown on the dealer's address. If the dealer is in Illinois — use Illinois rules. If Texas — use Texas rules. NEVER mention California rules unless the dealer address explicitly shows CA or a California city. Mentioning the wrong state's rules destroys user trust.
+DEALER LOCATION: Find the dealer's full address on the document. Extract:
+1. CITY (e.g., "Torrance", "Houston", "Chicago")
+2. COUNTY (e.g., "Los Angeles County", "Harris County", "Cook County") — infer from city if not stated
+3. STATE (e.g., "CA", "TX", "IL")
 
-BUYER STATE: Read buyer's address if shown. Note if buyer is from a different state than dealer.
+⚠️ CRITICAL STATE/COUNTY RULE: Apply ONLY the rules for the exact jurisdiction shown. If the dealer is in Illinois — use Illinois rules. If Texas — use Texas rules. NEVER default to California rules unless the dealer address explicitly shows CA. Wrong state rules destroy user trust.
+
+SALES TAX BY COUNTY (this is where buyers most often get misled — the combined rate varies by city/county):
+- California: State base 7.25%. Counties and cities add on top.
+  - Los Angeles County: combined rate 10.25% (most cities); Santa Monica 10.25%; Long Beach 10.25%
+  - Orange County: 7.75% (most cities); Anaheim 7.75%; Irvine 7.75%; Newport Beach 7.75%
+  - San Diego County: 7.75% (most cities); Chula Vista 8.75%
+  - Riverside County: 8.75%; San Bernardino County: 7.75%
+  - San Jose / Santa Clara County: 9.375%; San Francisco: 8.625%
+  - If stated county/city is not listed here: flag if the tax rate shown does not match state base + known local add-ons
+- Texas: State 6.25% + local up to 2% = max 8.25%. Most Dallas/Houston/Austin areas = 8.25%.
+- Florida: State 6% + county surtax (0–1.5%). Miami-Dade = 7%; Broward = 7%; Palm Beach = 7%; Orange (Orlando) = 6.5%
+- Illinois: State 6.25% + Chicago city/county add-ons. Chicago = ~10.25%; suburban Cook County = 9.25%–10.25%
+- Nevada: 6.85% state + county. Clark County (Las Vegas) = 8.375%
+- Washington: 6.5% state + local. King County (Seattle area) = 10.2%–10.5%
+- Other states: If the tax rate shown on the document seems unusually high or low for the stated city, flag it as YELLOW and note the expected range.
+
+⚠️ TAX FLAG RULE: If the tax amount in the document does not match (purchase price × expected rate for that county), flag YELLOW: "Tax shown ($X) appears [high/low] for [city, state] — confirm with dealer."
+
+BUYER STATE: Read buyer's address if shown. Note if buyer is from a different state than dealer (can affect registration).
 DEAL TYPE: Determine from the numbers — do NOT rely on user's selection.
 - Lease: has money factor + residual + monthly payment
 - Finance: has APR + loan term + monthly payment
@@ -1498,6 +1679,23 @@ DOC FEE BY STATE (apply only the dealer's state):
 - Texas: not regulated, $100-300 typical, above $500 = question it
 - Florida: not regulated, up to $1,000 seen
 - Other states: research the norm for that state, do not assume California rules
+
+MARKET DETECTION — determine BEFORE applying any rules:
+- US MARKET DEAL: Prices in USD ($), dealer address in a US state, lender is a US bank or captive (Chase, US Bank, NMAC, BMWFS, MBFS, etc.)
+- RUSSIAN MARKET DEAL (РФ): Prices in rubles (₽ / RUB / руб), dealer address in Russia, lender is a Russian bank (Сбербанк, ВТБ, Альфа-Банк, Тинькофф, Газпромбанк, Русфинанс, Сетелем, etc.)
+
+When the document is a RUSSIAN MARKET DEAL — replace US-market rules with these:
+
+RUSSIAN MARKET RULES (apply ONLY for ₽-denominated deals):
+- КРЕДИТНАЯ СТАВКА: CBR key rate as of mid-2026 is ~16%. Flag RED if auto loan APR > CBR + 6% (i.e., > ~22%). Flag YELLOW if > CBR + 3%.
+- КАСКО: Buyer has legal right to choose any licensed insurer (FZ-353). If dealer requires КАСКО only through their partner insurer — flag RED. Script: "Я воспользуюсь правом самостоятельно выбрать страховщика согласно ФЗ №353. Предоставлю полис до получения автомобиля."
+- ОСАГО: Government-regulated rate. If dealer price is inflated vs. direct insurer rates — flag YELLOW.
+- СТРАХОВАНИЕ ЖИЗНИ / ЗДОРОВЬЯ: Optional by FZ «О защите прав потребителей» Art.16. If framed as mandatory — flag RED. Script: "По ст.16 ФЗ «О защите прав потребителей» навязывание доп. услуг при кредитовании запрещено. Прошу убрать страхование из условий."
+- ДОПОЛНИТЕЛЬНОЕ ОБОРУДОВАНИЕ: Pre-installed accessories (тонировка, сигнализация, защита кузова, антикор) are optional. If priced into deal without buyer consent — flag RED. Script: "Данное оборудование установлено без моего согласия. Прошу снизить цену на стоимость опций либо убрать их до передачи авто."
+- DEALER FEES: Any "комиссия за оформление" or "услуга дилера" over 20,000₽ without itemization — flag RED.
+- NEGATIVE EQUITY ROLLOVER: If trade payoff > trade value, difference rolls into loan — flag RED and show cost impact in rubles.
+- СРОК КРЕДИТА: Term > 60 months — flag YELLOW (high overpayment, fast depreciation creates underwater risk).
+- DOC FORMAT: Display all amounts in ₽ for Russian market deals.
 
 ═══════════════════════════════════════
 STEP 3 — FULL ANALYSIS
@@ -1625,13 +1823,16 @@ RESPOND IN: ${lang === 'ru' ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
 Extract and list every piece of data you see:
 - Vehicle: year, make, model, trim — copy LETTER BY LETTER exactly as printed on the document
 - Stock # / VIN
+- Dealer name, full address — extract CITY, COUNTY (infer from city if not stated), and STATE separately
+- Buyer address (if shown) — city and state
 - Selling Price / Sale Price
 - MSRP (if shown)
 - Trade-in: year, make, model, mileage, allowance, payoff
 - All fees individually (doc fee, registration, each tax line)
 - Financing: down payment, APR, term, monthly payment
 - Money Factor, Residual % (if lease)
-- Any other dollar amounts or terms
+- If Russian market (prices in ₽): Ставка по кредиту (%), срок кредита, первоначальный взнос, КАСКО (страховщик + стоимость), ОСАГО (стоимость), страхование жизни/здоровья (стоимость + обязательность), дополнительное оборудование (каждый пункт и цена отдельно), комиссии банка/дилера
+- Any other dollar or ruble amounts or terms
 
 CRITICAL: Copy the vehicle model name EXACTLY as it appears — letter by letter. If document shows "TX" write "TX". If it shows "RX" write "RX". Never auto-correct or assume the model.
 
@@ -1672,9 +1873,16 @@ async function analyzeDeal() {
         userContent.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:processedBase64 } });
       }
     }
+    // Attach additional pages if user uploaded them
+    extraImages.forEach((img, i) => {
+      userContent.push(img.isPdf
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:img.data } }
+        : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data:img.data } });
+    });
+    const pageNote = extraImages.length > 0 ? ` (${extraImages.length + 1} pages total)` : '';
     const promptText = lang === 'ru'
-      ? `Тип сделки: ${dealType}${textInput ? '\n\nДоп. информация:\n'+textInput : processedBase64 ? '\n\nИзвлеки все данные из документа.' : ''}`
-      : `Deal type: ${dealType}${textInput ? '\n\nUser notes:\n'+textInput : processedBase64 ? '\n\nExtract all data from this document.' : ''}`;
+      ? `Тип сделки: ${dealType}${pageNote}${textInput ? '\n\nДоп. информация:\n'+textInput : processedBase64 ? '\n\nИзвлеки все данные из документа.' : ''}`
+      : `Deal type: ${dealType}${pageNote}${textInput ? '\n\nUser notes:\n'+textInput : processedBase64 ? '\n\nExtract all data from this document.' : ''}`;
     userContent.push({ type:'text', text: promptText });
 
     const resp = await fetch('/api/analyze', {
@@ -1683,7 +1891,7 @@ async function analyzeDeal() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 500,
-        system: buildExtractionSystem(),
+        system: [{ type: 'text', text: buildExtractionSystem(), cache_control: { type: 'ephemeral' } }],
         messages: [{ role:'user', content: userContent }]
       })
     });
@@ -1815,11 +2023,32 @@ async function showConfirmationStep(extractedText) {
     const statusEl = document.getElementById('vin-lookup-status');
     if (!statusEl) return;
     const linksHtml = links.map(l => `<a href="${l.url}" target="_blank" style="color:var(--accent)">📄 ${l.label}</a>`).join(' · ');
+
+    // Market price research links — constructed from decoded VIN data
+    let priceLinksHtml = '';
+    if (vinData) {
+      const y = encodeURIComponent(vinData.year || '');
+      const mk = encodeURIComponent((vinData.make || '').toLowerCase());
+      const mo = encodeURIComponent((vinData.model || '').toLowerCase());
+      const kbbUrl = `https://www.kbb.com/${mk}/${mo}/${y}/`;
+      const cgUrl  = `https://www.cargurus.com/Cars/new/nl#listing=2&keyword=${y}+${vinData.make}+${vinData.model}`;
+      const atUrl  = `https://www.autotrader.com/cars-for-sale/new-cars/${mk}/${mo}/?year=${y}`;
+      priceLinksHtml = `<div style="margin-top:0.5rem;font-size:12px;color:var(--text-muted)">`
+        + `${ru ? '💰 Рыночная цена:' : '💰 Market price:'} `
+        + `<a href="${kbbUrl}" target="_blank" style="color:var(--accent)">KBB</a> · `
+        + `<a href="${cgUrl}" target="_blank" style="color:var(--accent)">CarGurus</a> · `
+        + `<a href="${atUrl}" target="_blank" style="color:var(--accent)">AutoTrader</a></div>`;
+    }
+
     if (vinData) {
       statusEl.innerHTML = `<span style="color:var(--green)">✓ ${vinData.year} ${vinData.make} ${vinData.model}${vinData.trim ? ' ' + vinData.trim : ''}</span>`
         + (linksHtml ? ' · ' + linksHtml : '');
     } else {
       statusEl.innerHTML = linksHtml || `<span style="color:var(--text-dim)">${ru ? 'VIN не найден в базе NHTSA' : 'VIN not found in NHTSA database'}</span>`;
+    }
+    if (priceLinksHtml) {
+      const vinInfoEl = document.getElementById('vin-info');
+      if (vinInfoEl) vinInfoEl.insertAdjacentHTML('beforeend', priceLinksHtml);
     }
   }
 }
@@ -1847,7 +2076,7 @@ async function runFullAnalysis() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2500,
-        system: buildSystem(),
+        system: [{ type: 'text', text: buildSystem(), cache_control: { type: 'ephemeral' } }],
         messages: [{ role:'user', content: userContent }]
       })
     });
@@ -1927,22 +2156,22 @@ async function runFullAnalysis() {
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
             ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
           </div>
-          <a href="https://www.instagram.com/pereprodavec_usa/" target="_blank"
-            style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none;margin-right:8px">
-            📱 Instagram DM
-          </a>
-          <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
-            style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border:1px solid var(--red);color:var(--red);font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
-            📅 ${ru ? 'Записаться' : 'Book call'}
-          </a>
-        </div>` : ''}
-        <div class="cta-box">
-          <div>
-            <div class="cta-box-text">${T[lang].ctaText}</div>
-            <div class="cta-box-sub">${T[lang].ctaSub}</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <a href="${CONTACT.instagram}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+              📱 Instagram
+            </a>
+            <a href="${CONTACT.telegram}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;background:#229ED9;color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+              ✈️ Telegram
+            </a>
+            <a href="${CONTACT.calendly}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border:1px solid var(--red);color:var(--red);font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+              📅 ${ru ? 'Записаться' : 'Book call'}
+            </a>
           </div>
-          <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" class="cta-link">${T[lang].ctaBtn}</a>
-        </div>
+        </div>` : ''}
+        ${buildCtaBox(diagnosis, lang)}
       </div>`;
 
     analysisCount++;
@@ -2016,9 +2245,36 @@ function shareAnalysis(verdict, vClass, btn) {
   const scoreMatch = (window.lastAnalysisText || '').match(/(\d+)\/10/);
   const score = scoreMatch ? scoreMatch[1] + '/10' : '';
   const emoji = vClass === 'verdict-good' ? '✅' : vClass === 'verdict-danger' ? '🚩' : '⚠️';
+  const diag = window.lastDiagnosis;
+  const overpay = diag?.totalOverpay > 0 ? (ru ? `💸 Переплата: ~$${Math.round(diag.totalOverpay).toLocaleString()}` : `💸 Overpayment risk: ~$${Math.round(diag.totalOverpay).toLocaleString()}`) : '';
+  const issueCount = diag?.issues?.length > 0 ? (ru ? `🔴 Проблем найдено: ${diag.issues.length}` : `🔴 Issues found: ${diag.issues.length}`) : '';
   const text = ru
-    ? `${emoji} Проверил сделку через DealCheck by Vlad${score ? ' — Оценка: ' + score : ''}\n\n${verdict}\n\nПроверь свою сделку: dealcheck-ashen.vercel.app\n@pereprodavec_usa`
-    : `${emoji} Just had my car deal analyzed by DealCheck by Vlad${score ? ' — Score: ' + score : ''}\n\n${verdict}\n\nCheck your deal: dealcheck-ashen.vercel.app`;
+    ? [
+        `${emoji} Проверил сделку через DealCheck by Vlad`,
+        score ? `Оценка: ${score}` : '',
+        verdict,
+        '',
+        overpay,
+        issueCount,
+        '',
+        `🚗 Проверь свою сделку БЕСПЛАТНО:`,
+        `dealcheck-ashen.vercel.app`,
+        ``,
+        `@pereprodavec_usa #DealCheck #авто #переговоры`
+      ].filter(Boolean).join('\n')
+    : [
+        `${emoji} Just had my car deal checked by DealCheck by Vlad`,
+        score ? `Score: ${score}` : '',
+        verdict,
+        '',
+        overpay,
+        issueCount,
+        '',
+        `🚗 Check YOUR deal FREE:`,
+        `dealcheck-ashen.vercel.app`,
+        ``,
+        `@pereprodavec_usa #DealCheck #CarBuying #CarDeals`
+      ].filter(Boolean).join('\n');
 
   // Capture btn before async — event.target is unavailable inside .then()
   const target = btn || document.activeElement;
@@ -2084,10 +2340,13 @@ async function processFileB(file) {
     const src = 'data:image/jpeg;base64,' + processedBase64_b;
     preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal B"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
   } catch(err) {
-    const reader = new FileReader();
-    reader.onload = (e) => { processedBase64_b = e.target.result.split(',')[1]; processedMime_b = 'image/jpeg'; };
-    reader.readAsDataURL(file);
-    preview.innerHTML = `<div class="file-card"><span>📷 ${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
+    // Real failure — surface a clear error instead of sending wrong-mime bytes to AI.
+    processedBase64_b = null;
+    const ru = lang === 'ru';
+    preview.innerHTML = `<div class="error-msg">${ru
+      ? `Не удалось обработать «${name}». Попробуйте загрузить JPEG или PDF.`
+      : `Could not process "${name}". Try uploading a JPEG or PDF instead.`}</div>`;
+    document.getElementById('file-input-b').value = '';
   }
 }
 
@@ -2124,7 +2383,6 @@ One concrete action: what to say to which dealer to close the best possible deal
 
 async function compareDeal() {
   const ru = lang === 'ru';
-  // Re-entrancy guard (same as runFullAnalysis)
   if (window.__analyzing) return;
   if (!processedBase64 && !processedBase64_b) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${ru ? 'Загрузите хотя бы одну сделку для сравнения.' : 'Upload at least one deal to compare.'}</div>`;
@@ -2133,25 +2391,80 @@ async function compareDeal() {
   window.__analyzing = true;
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
-  btn.textContent = ru ? 'Сравниваем...' : 'Comparing...';
+  btn.textContent = ru ? 'Читаем документы...' : 'Reading documents...';
   document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
 
+  // Step 1: Extract numbers from both documents so the user can verify before full comparison
   try {
-    const userContent = [];
+    const extractContent = [];
     if (processedBase64) {
-      userContent.push({ type: 'text', text: ru ? '## СДЕЛКА А:' : '## DEAL A:' });
-      userContent.push(isPdf
+      extractContent.push({ type:'text', text: ru ? '## СДЕЛКА А:' : '## DEAL A:' });
+      extractContent.push(isPdf
         ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64 } }
         : { type:'image', source:{ type:'base64', media_type:processedMime, data:processedBase64 } });
     }
     if (processedBase64_b) {
-      userContent.push({ type: 'text', text: ru ? '## СДЕЛКА Б:' : '## DEAL B:' });
-      userContent.push(isPdf_b
+      extractContent.push({ type:'text', text: ru ? '## СДЕЛКА Б:' : '## DEAL B:' });
+      extractContent.push(isPdf_b
         ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64_b } }
         : { type:'image', source:{ type:'base64', media_type:processedMime_b, data:processedBase64_b } });
     }
     const textInput = document.getElementById('deal-input').value.trim();
-    if (textInput) userContent.push({ type:'text', text: (ru ? 'Дополнительная информация:\n' : 'Additional info:\n') + textInput });
+    if (textInput) extractContent.push({ type:'text', text: (ru ? 'Доп. информация:\n' : 'Additional info:\n') + textInput });
+    extractContent.push({ type:'text', text: ru ? 'Извлеки ключевые данные из каждой сделки отдельно.' : 'Extract key numbers from each deal separately.' });
+
+    const exResp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 700,
+        system: [{ type:'text', text: buildExtractionSystem(), cache_control:{ type:'ephemeral' } }],
+        messages: [{ role:'user', content: extractContent }]
+      })
+    });
+    const exData = await exResp.json();
+    if (exData.error) throw new Error(exData.error.message || JSON.stringify(exData.error));
+    const extracted = exData.content?.map(b => b.text||'').join('') || '';
+
+    window.__analyzing = false;
+    btn.disabled = false;
+    btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
+
+    // Show confirmation step
+    const safe = extracted.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    document.getElementById('result-area').innerHTML = `
+      <div class="result-card" style="margin-top:1.5rem">
+        <div class="result-header">
+          <span class="verdict-badge verdict-warning">📋 ${ru ? 'ПРОВЕРЬТЕ ЦИФРЫ' : 'CONFIRM NUMBERS'}</span>
+        </div>
+        <div class="result-body">
+          <p style="margin-bottom:0.75rem;color:var(--text);font-weight:500">${ru
+            ? 'AI прочитал эти данные из обоих документов. <strong>Исправьте всё что неверно</strong>:'
+            : 'AI read these numbers from both documents. <strong>Fix anything wrong</strong>:'}</p>
+          <textarea id="confirmed-numbers-compare" style="min-height:240px;font-size:13px;margin-bottom:1rem">${safe}</textarea>
+          <button class="analyze-btn" onclick="runCompareAnalysis()">${ru ? 'Всё верно — сравнить →' : 'Confirmed — compare →'}</button>
+        </div>
+      </div>`;
+    return;
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+    window.__analyzing = false;
+    btn.disabled = false;
+    btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
+    return;
+  }
+}
+
+async function runCompareAnalysis() {
+  const ru = lang === 'ru';
+  if (window.__analyzing) return;
+  window.__analyzing = true;
+  const confirmed = document.getElementById('confirmed-numbers-compare')?.value?.trim() || '';
+  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  try {
+    const userContent = [{ type:'text', text: confirmed || (ru ? 'Сравни эти две сделки.' : 'Compare these two deals.') }];
 
     const resp = await fetch('/api/analyze', {
       method: 'POST',
@@ -2159,7 +2472,7 @@ async function compareDeal() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2500,
-        system: buildCompareSystem(),
+        system: [{ type: 'text', text: buildCompareSystem(), cache_control: { type: 'ephemeral' } }],
         messages: [{ role:'user', content: userContent }]
       })
     });
@@ -2193,10 +2506,7 @@ async function compareDeal() {
           <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;border-color:var(--accent);color:var(--accent)">🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}</button>
         </div>
         <div id="email-area"></div>
-        <div class="cta-box">
-          <div><div class="cta-box-text">${T[lang].ctaText}</div><div class="cta-box-sub">${T[lang].ctaSub}</div></div>
-          <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" class="cta-link">${T[lang].ctaBtn}</a>
-        </div>
+        ${buildCtaBox(null, lang)}
       </div>`;
 
     analysisCount++;
@@ -2209,9 +2519,9 @@ async function compareDeal() {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
   } finally {
     window.__analyzing = false;
+    const compareBtn = document.getElementById('analyze-btn');
+    if (compareBtn) { compareBtn.disabled = false; compareBtn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →'; }
   }
-  btn.disabled = false;
-  btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
 }
 
 // ── PDF / PRINT ───────────────────────────────────────────────────────────────

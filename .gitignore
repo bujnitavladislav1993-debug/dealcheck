@@ -1,0 +1,5 @@
+# Local dev helpers — not for production
+.claude/
+serve.py
+*.log
+.DS_Store
