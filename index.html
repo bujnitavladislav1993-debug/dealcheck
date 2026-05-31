@@ -709,19 +709,24 @@
     margin: 0 0 1rem; animation: slideUp 0.3s ease;
   }
 </style>
-<!-- heic2any: in-browser HEIC→JPEG conversion so iPhone photos work
-     (browsers can't decode HEIC natively in <img> or canvas). Loaded
-     lazily — only fetched if the user actually uploads a HEIC file. -->
+<!-- heic-to: in-browser HEIC→JPEG conversion. Uses a CURRENT libheif (v1.19)
+     build that decodes modern iPhone "grid"/tiled HEIC, which the older,
+     abandoned heic2any (libheif ~2019) failed on. The WASM is inlined in the
+     bundle, so there is no separate .wasm fetch to misconfigure. Loaded lazily
+     — only fetched when a non-Safari browser actually needs to convert a HEIC
+     (Safari/iOS decode HEIC natively in <img>/canvas and never hit this). -->
 <script>
-  window.ensureHeic2any = (function() {
+  window.ensureHeicConverter = (function() {
     let p = null;
     return function () {
-      if (window.heic2any) return Promise.resolve(window.heic2any);
+      if (window.HeicTo) return Promise.resolve(window.HeicTo);
       if (p) return p;
       p = new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-        s.onload  = () => resolve(window.heic2any);
+        s.src = 'https://cdn.jsdelivr.net/npm/heic-to@1.5.2/dist/iife/heic-to.js';
+        s.onload  = () => window.HeicTo
+          ? resolve(window.HeicTo)
+          : reject(new Error('HEIC converter loaded but global missing'));
         s.onerror = () => { p = null; reject(new Error('Failed to load HEIC converter')); };
         document.head.appendChild(s);
       });
@@ -1358,9 +1363,10 @@ function isHeicFile(file) {
 
 // Convert HEIC → JPEG Blob so the rest of the pipeline (canvas, AI upload) just works.
 async function heicToJpeg(file) {
-  const heic2any = await window.ensureHeic2any();
-  const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
-  // heic2any returns Blob or Blob[]; coerce to single Blob
+  const HeicTo = await window.ensureHeicConverter();
+  // heic-to API: HeicTo({ blob, type, quality }) → JPEG Blob.
+  const blob = await HeicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
+  // Returns a single Blob; coerce defensively in case a build hands back an array.
   return Array.isArray(blob) ? blob[0] : blob;
 }
 
@@ -1397,7 +1403,7 @@ async function compressImage(file, maxW, maxH, quality) {
     return await drawToJpegBase64(file, maxW, maxH, quality);
   } catch (nativeErr) {
     // 2) Native decode failed. On Chrome/Firefox this is expected for HEIC — convert
-    //    with heic2any, then retry the canvas draw on the resulting JPEG.
+    //    with heic-to (modern libheif), then retry the canvas draw on the JPEG.
     if (isHeicFile(file)) {
       let converted;
       try {
@@ -1438,7 +1444,7 @@ async function processFile(file) {
     const src = 'data:image/jpeg;base64,' + processedBase64;
     preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal document"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
   } catch(err) {
-    // Real failure (corrupt file, network for heic2any, etc.) — surface a clear
+    // Real failure (corrupt file, HEIC converter load/decode failed, etc.) — surface a clear
     // error instead of silently lying about mime type to Anthropic.
     console.error('[processFile] image processing failed:', err && err.message, err);
     processedBase64 = null;
