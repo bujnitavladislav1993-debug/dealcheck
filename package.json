@@ -1,0 +1,9 @@
+{
+  "name": "dealcheck",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DealCheck by Vlad — AI car-deal analyzer for Russian-speaking US buyers.",
+  "dependencies": {
+    "@vercel/blob": "^2.4.0"
+  }
+}

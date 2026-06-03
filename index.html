@@ -2651,6 +2651,16 @@ async function submitCapturedEmail() {
   const dealText      = (document.getElementById('deal-input')?.value || '').trim();
   const hasAttachment = !!(typeof processedBase64 !== 'undefined' && processedBase64);
 
+  // Pull the uploaded document(s) so the backend can archive them to Blob and
+  // email Vlad the original files — without this, "Attachment: yes" is just a flag
+  // and the actual deal paperwork is lost.
+  const image = hasAttachment
+    ? { data: processedBase64, mime: (typeof processedMime !== 'undefined' && processedMime) || 'image/jpeg' }
+    : null;
+  const extras = (typeof extraImages !== 'undefined' && Array.isArray(extraImages))
+    ? extraImages.map((x) => ({ data: x.data, mime: x.mime || (x.isPdf ? 'application/pdf' : 'image/jpeg') }))
+    : [];
+
   try {
     await fetch('/api/collect-email', {
       method: 'POST',
@@ -2664,7 +2674,9 @@ async function submitCapturedEmail() {
         dealText: dealText || null,
         dealType: typeof dealType !== 'undefined' ? dealType : null,
         hasAttachment,
-        lang: typeof lang !== 'undefined' ? lang : null
+        lang: typeof lang !== 'undefined' ? lang : null,
+        image,
+        extras
       })
     });
   } catch(e) { /* fail silently — never block the user */ }

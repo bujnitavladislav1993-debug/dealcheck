@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
     // 5. CSV export branch
     if (req.query.format === 'csv') {
-      const header = ['Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Deal Type', 'Attachment', 'Lang', 'Deal Text', 'Ref'];
+      const header = ['Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Deal Type', 'Attachment', 'Lang', 'Deal Text', 'Image URLs', 'Ref'];
       const esc    = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
       const rows   = leads.map((l) => [
         l.ts ? new Date(l.ts).toISOString() : '',
@@ -54,6 +54,7 @@ export default async function handler(req, res) {
         l.hasAttachment ? 'yes' : '',
         l.lang          || '',
         l.dealText      || '',
+        Array.isArray(l.imageUrls) ? l.imageUrls.join(' | ') : '',
         l.ref           || ''
       ].map(esc).join(','));
       // RFC 4180 line ending — Excel on Windows treats LF-only newlines as a single cell.

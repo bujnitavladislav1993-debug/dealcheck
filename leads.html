@@ -110,6 +110,19 @@
   }
   .err-banner { background: #2a1010; border: 1px solid var(--red); color: var(--red);
     padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+
+  /* ── Photo column ── */
+  td.photos { width: 1px; white-space: nowrap; }
+  .thumbs { display: flex; gap: 4px; }
+  .thumb {
+    width: 48px; height: 48px; border-radius: 6px; background: var(--surface2)
+      no-repeat center/cover; border: 1px solid var(--border); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text-muted); text-decoration: none;
+    transition: border-color .15s;
+  }
+  .thumb:hover { border-color: var(--accent); }
+  .thumb.pdf { background: var(--surface2); }
 </style>
 </head>
 <body>
@@ -151,6 +164,7 @@
         <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
+        <th>Photo</th>
         <th>Deal</th>
         <th>Ref</th>
       </tr>
@@ -232,11 +246,26 @@ function renderTable() {
       dealCell = '<span class="muted">—</span>';
     }
 
+    // Photo column: small clickable thumbnails for each Blob URL. PDFs get a
+    // generic "📄" tile because browsers can't render them as inline images.
+    let photoCell = '<span class="muted">—</span>';
+    if (Array.isArray(l.imageUrls) && l.imageUrls.length) {
+      photoCell = '<div class="thumbs">' + l.imageUrls.map((u) => {
+        const safe = escapeHtml(u);
+        const isPdf = /\.pdf(\?|$)/i.test(u);
+        return isPdf
+          ? '<a class="thumb pdf" href="' + safe + '" target="_blank" rel="noopener" title="Open PDF">📄</a>'
+          : '<a class="thumb" href="' + safe + '" target="_blank" rel="noopener" title="Open full size" '
+              + 'style="background-image:url(\'' + safe + '\')"></a>';
+      }).join('') + '</div>';
+    }
+
     return '<tr>' +
       '<td class="date">' + escapeHtml(date) + '</td>' +
       '<td>' + name + '</td>' +
       '<td class="email">' + email + '</td>' +
       '<td class="phone">' + phone + '</td>' +
+      '<td class="photos">' + photoCell + '</td>' +
       '<td class="deal">' + dealCell + '</td>' +
       '<td>' + ref + '</td>' +
     '</tr>';
