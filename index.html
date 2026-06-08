@@ -760,7 +760,7 @@
 <div class="trust-bar">
   <div class="trust-item"><span class="num">10+</span> <span id="t1">лет в автобизнесе в США</span></div>
   <div class="trust-item"><span class="num" id="deals-counter">—</span> <span id="t2">сделок проанализировано</span></div>
-  <div class="trust-item"><span class="num">2 мин</span> <span id="t3">на анализ сделки</span></div>
+  <div class="trust-item"><span class="num" id="t3-num">2 мин</span> <span id="t3">на анализ сделки</span></div>
   <div class="trust-item"><span class="num">RU/EN</span> <span id="t4">двуязычный</span></div>
 </div>
 
@@ -1201,6 +1201,9 @@ const T = {
     heroTitle: 'Не подписывайте контракт с дилером,<br>пока я не <em>проверю</em> цифры',
     heroSub: 'Есть цена от автодилера? Я Влад, 10 лет в автобизнесе США. Пришлите email, скрин или фото — первая проверка бесплатно. С помощью AI за 2 минуты найду скрытые наценки и скажу, на что давить при торге.',
     t1:'лет в автобизнесе в США', t2:'сделок проанализировано', t3:'на анализ сделки', t4:'двуязычный',
+    t3num: '2 мин',
+    modeSingle: 'Анализ сделки',
+    modeCompare: 'Сравнить 2 сделки',
     payTitle: '💳 Разблокировать анализ — $20',
     payNote: 'Одноразовая оплата · Мгновенный доступ · Никаких подписок',
     unlockBanner: '✓ Доступ открыт — загрузите вашу сделку',
@@ -1234,6 +1237,9 @@ const T = {
     heroTitle: 'Don\'t sign that dealer contract<br>until I <em>check</em> the numbers',
     heroSub: 'Got a price from a dealer? I\'m Vlad, 10 years in the U.S. auto business. Send me the email, screenshot, or photo — first check is free. With AI, in 2 minutes I\'ll find the hidden markups and tell you exactly where to push when you negotiate.',
     t1:'years in the industry', t2:'deals analyzed', t3:'to analyze your deal', t4:'bilingual',
+    t3num: '2 min',
+    modeSingle: 'Analyze deal',
+    modeCompare: 'Compare 2 deals',
     payTitle: '💳 Unlock analysis — $20',
     payNote: 'One-time payment · Instant access · No subscriptions',
     unlockBanner: '✓ Access unlocked — upload your deal',
@@ -1276,6 +1282,14 @@ function setLang(l) {
   document.getElementById('t2').textContent = t.t2;
   document.getElementById('t3').textContent = t.t3;
   document.getElementById('t4').textContent = t.t4;
+  // "2 мин" / "2 min" — the only language-dependent number in the trust strip.
+  const t3num = document.getElementById('t3-num');
+  if (t3num) t3num.textContent = t.t3num;
+  // Mode toggle buttons (single deal vs compare 2 deals).
+  const singleLbl  = document.getElementById('mode-single-label');
+  const compareLbl = document.getElementById('mode-compare-label');
+  if (singleLbl)  singleLbl.textContent  = t.modeSingle;
+  if (compareLbl) compareLbl.textContent = t.modeCompare;
   document.getElementById('pay-title').textContent = t.payTitle;
   document.getElementById('pay-note').textContent = t.payNote;
   document.getElementById('unlock-banner').textContent = t.unlockBanner;
