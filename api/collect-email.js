@@ -185,11 +185,11 @@ export default async function handler(req, res) {
   if (process.env.RESEND_API_KEY && process.env.RESEND_FROM) {
     const isRu = safeLang === 'ru';
     const subject = isRu
-      ? 'Ваш анализ сделки готов — DealCheck by Vlad'
-      : 'Your deal analysis is ready — DealCheck by Vlad';
+      ? 'Ваш анализ сделки готов — AI DealCheck'
+      : 'Your deal analysis is ready — AI DealCheck';
     const html = isRu ? `
 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0a;color:#f0f0f0;padding:32px;border-radius:12px">
-  <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">DealCheck by Vlad</div>
+  <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">AI DealCheck</div>
   <div style="font-size:16px;font-weight:600;margin-bottom:16px">Привет, ${safeFirst}!</div>
   <p style="color:#aaa;line-height:1.7;margin-bottom:20px">
     Ваш бесплатный анализ готов на сайте. Вернитесь на <a href="https://aidealcheck.com" style="color:#c9a84c">aidealcheck.com</a>, чтобы посмотреть результаты.
@@ -202,7 +202,7 @@ export default async function handler(req, res) {
   <p style="color:#555;font-size:12px;margin-top:32px">Влад · IG @pereprodavec_vlad · TG @pereprodavec_usa</p>
 </div>` : `
 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0a;color:#f0f0f0;padding:32px;border-radius:12px">
-  <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">DealCheck by Vlad</div>
+  <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">AI DealCheck</div>
   <div style="font-size:16px;font-weight:600;margin-bottom:16px">Hey ${safeFirst},</div>
   <p style="color:#aaa;line-height:1.7;margin-bottom:20px">
     Your free deal analysis is waiting at <a href="https://aidealcheck.com" style="color:#c9a84c">aidealcheck.com</a>. Head back to see your results.

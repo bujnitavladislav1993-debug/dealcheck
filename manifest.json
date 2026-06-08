@@ -1,6 +1,6 @@
 {
-  "name": "DealCheck by Vlad",
-  "short_name": "DealCheck",
+  "name": "AI DealCheck",
+  "short_name": "AI DealCheck",
   "description": "AI car deal analyzer — find hidden fees before you sign",
   "start_url": "/",
   "display": "standalone",
