@@ -143,7 +143,7 @@ export default async function handler(req, res) {
     <ul style="margin:0;padding-left:18px;color:#c9a84c">${imageList}</ul>
   </div>
   <div style="margin-top:18px;font-size:12px;color:#666">
-    Sent from DealCheck · <a href="https://dealcheck-ashen.vercel.app/leads.html" style="color:#666">view all leads</a>
+    Sent from DealCheck · <a href="https://aidealcheck.com/leads.html" style="color:#666">view all leads</a>
   </div>
 </div>`;
     // Resend attachments take base64 content directly. We attach the originals
@@ -192,27 +192,27 @@ export default async function handler(req, res) {
   <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">DealCheck by Vlad</div>
   <div style="font-size:16px;font-weight:600;margin-bottom:16px">Привет, ${safeFirst}!</div>
   <p style="color:#aaa;line-height:1.7;margin-bottom:20px">
-    Ваш бесплатный анализ готов на сайте. Вернитесь на <a href="https://dealcheck-ashen.vercel.app" style="color:#c9a84c">dealcheck-ashen.vercel.app</a>, чтобы посмотреть результаты.
+    Ваш бесплатный анализ готов на сайте. Вернитесь на <a href="https://aidealcheck.com" style="color:#c9a84c">aidealcheck.com</a>, чтобы посмотреть результаты.
   </p>
   <p style="color:#aaa;line-height:1.7;margin-bottom:24px">
     Если сделка оказалась сложной — <strong style="color:#f0f0f0">напишите мне напрямую</strong>. 10+ лет в автобизнесе США, помогу выторговать лучшие условия.
   </p>
-  <a href="https://www.instagram.com/pereprodavec_usa/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
+  <a href="https://www.instagram.com/pereprodavec_vlad/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
   <a href="https://t.me/pereprodavec_usa" style="display:inline-block;padding:12px 24px;background:#229ED9;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">✈️ Telegram</a>
-  <p style="color:#555;font-size:12px;margin-top:32px">Влад · @pereprodavec_usa · Newport Beach, CA</p>
+  <p style="color:#555;font-size:12px;margin-top:32px">Влад · IG @pereprodavec_vlad · TG @pereprodavec_usa</p>
 </div>` : `
 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0a;color:#f0f0f0;padding:32px;border-radius:12px">
   <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">DealCheck by Vlad</div>
   <div style="font-size:16px;font-weight:600;margin-bottom:16px">Hey ${safeFirst},</div>
   <p style="color:#aaa;line-height:1.7;margin-bottom:20px">
-    Your free deal analysis is waiting at <a href="https://dealcheck-ashen.vercel.app" style="color:#c9a84c">dealcheck-ashen.vercel.app</a>. Head back to see your results.
+    Your free deal analysis is waiting at <a href="https://aidealcheck.com" style="color:#c9a84c">aidealcheck.com</a>. Head back to see your results.
   </p>
   <p style="color:#aaa;line-height:1.7;margin-bottom:24px">
     If the deal looked complicated or you found red flags — <strong style="color:#f0f0f0">reach out directly</strong>. I have 10+ years inside US dealerships and can negotiate on your behalf.
   </p>
-  <a href="https://www.instagram.com/pereprodavec_usa/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
+  <a href="https://www.instagram.com/pereprodavec_vlad/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
   <a href="https://t.me/pereprodavec_usa" style="display:inline-block;padding:12px 24px;background:#229ED9;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">✈️ Telegram</a>
-  <p style="color:#555;font-size:12px;margin-top:32px">Vlad · @pereprodavec_usa · Newport Beach, CA</p>
+  <p style="color:#555;font-size:12px;margin-top:32px">Vlad · IG @pereprodavec_vlad · TG @pereprodavec_usa</p>
 </div>`;
 
     fetch('https://api.resend.com/emails', {

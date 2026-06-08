@@ -62,7 +62,7 @@ export default async function handler(req, res) {
           error: {
             message:
               'Вы уже использовали бесплатный анализ. ' +
-              'Попробуйте снова через 72 часа или напишите @pereprodavec_usa в Instagram для персональной консультации. ' +
+              'Попробуйте снова через 72 часа или напишите @pereprodavec_vlad в Instagram для персональной консультации. ' +
               '(Rate limit: 1 free analysis per IP per 72 hours.)'
           }
         });

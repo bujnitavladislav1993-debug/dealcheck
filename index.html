@@ -877,7 +877,7 @@
 <!-- FOOTER -->
 <footer>
   <strong style="color:var(--text)">DealCheck by Vlad</strong> · 10+ лет в автоиндустрии США<br>
-  <a href="https://www.instagram.com/pereprodavec_usa/" target="_blank" style="color:var(--accent);text-decoration:none">pereprodavec_usa</a> · Консультации:
+  <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" style="color:var(--accent);text-decoration:none">pereprodavec_vlad</a> · Консультации:
   <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" style="color:var(--accent);text-decoration:none">Calendly</a><br><br>
   <span>© 2026 DealCheck by Vlad. Все права защищены.</span>
 </footer>
@@ -1061,7 +1061,7 @@ function renderUnlockedAnalysis(body, diagnosis) {
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
         ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
       </div>
-      <a href="https://www.instagram.com/pereprodavec_usa/" target="_blank"
+      <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank"
         style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none;margin-right:8px">
         📱 Instagram DM
       </a>
@@ -1152,7 +1152,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
 // ── Contact links — update Telegram handle if different ──────────────────────
 const CONTACT = {
-  instagram: 'https://www.instagram.com/pereprodavec_usa/',
+  instagram: 'https://www.instagram.com/pereprodavec_vlad/',
   telegram:  'https://t.me/pereprodavec_usa',
   calendly:  'https://calendly.com/cars_with_vlad/new-meeting-2',
 };
@@ -2155,8 +2155,8 @@ async function runFullAnalysis() {
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
         <div class="print-header" style="display:none">
-          <strong style="font-size:1.1rem">DealCheck by Vlad</strong> &nbsp;·&nbsp; dealcheck-ashen.vercel.app<br>
-          <span style="font-size:12px;color:#555">@pereprodavec_usa &nbsp;·&nbsp; calendly.com/cars_with_vlad &nbsp;·&nbsp; ${new Date().toLocaleDateString()}</span>
+          <strong style="font-size:1.1rem">DealCheck by Vlad</strong> &nbsp;·&nbsp; aidealcheck.com<br>
+          <span style="font-size:12px;color:#555">@pereprodavec_vlad &nbsp;·&nbsp; calendly.com/cars_with_vlad &nbsp;·&nbsp; ${new Date().toLocaleDateString()}</span>
         </div>
         <div class="result-header">
           <span class="verdict-badge ${vClass}">${vText}</span>
@@ -2294,9 +2294,9 @@ function shareAnalysis(verdict, vClass, btn) {
         issueCount,
         '',
         `🚗 Проверь свою сделку БЕСПЛАТНО:`,
-        `dealcheck-ashen.vercel.app`,
+        `aidealcheck.com`,
         ``,
-        `@pereprodavec_usa #DealCheck #авто #переговоры`
+        `@pereprodavec_vlad #DealCheck #авто #переговоры`
       ].filter(Boolean).join('\n')
     : [
         `${emoji} Just had my car deal checked by DealCheck by Vlad`,
@@ -2307,9 +2307,9 @@ function shareAnalysis(verdict, vClass, btn) {
         issueCount,
         '',
         `🚗 Check YOUR deal FREE:`,
-        `dealcheck-ashen.vercel.app`,
+        `aidealcheck.com`,
         ``,
-        `@pereprodavec_usa #DealCheck #CarBuying #CarDeals`
+        `@pereprodavec_vlad #DealCheck #CarBuying #CarDeals`
       ].filter(Boolean).join('\n');
 
   // Capture btn before async — event.target is unavailable inside .then()
@@ -2710,10 +2710,10 @@ function getRefCode() {
 function shareWithRef(btn) {
   const ru = lang === 'ru';
   const code = getRefCode();
-  const url  = `https://dealcheck-ashen.vercel.app?ref=${code}`;
+  const url  = `https://aidealcheck.com?ref=${code}`;
   const text = ru
-    ? `🚗 Проверяй автосделки с AI — бесплатно!\n${url}\n\nПо моей ссылке получишь бонусный анализ 🎁\n@pereprodavec_usa`
-    : `🚗 Check your car deal with AI — free!\n${url}\n\nUse my link for a bonus free analysis 🎁\n@pereprodavec_usa`;
+    ? `🚗 Проверяй автосделки с AI — бесплатно!\n${url}\n\nПо моей ссылке получишь бонусный анализ 🎁\n@pereprodavec_vlad`
+    : `🚗 Check your car deal with AI — free!\n${url}\n\nUse my link for a bonus free analysis 🎁\n@pereprodavec_vlad`;
   navigator.clipboard.writeText(text).then(() => {
     const orig = btn.innerHTML;
     btn.innerHTML = ru ? '✓ Ссылка скопирована!' : '✓ Link copied!';
