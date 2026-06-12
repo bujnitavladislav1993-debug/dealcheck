@@ -1,4 +1,5 @@
 import { put } from '@vercel/blob';
+import { sendBrevoEmail } from './lib/brevo.js';
 
 // Vercel default body limit is 4.5 MB. A typical compressed JPEG (≤1800px @ 0.85)
 // is ~250–500 KB; three pages stays well under. PDFs are not compressed by the
@@ -181,13 +182,15 @@ export default async function handler(req, res) {
     }).catch(e => console.error('[resend admin]', e.message)); // fire-and-forget
   }
 
-  // ── Welcome email to the lead (unchanged) ──────────────────────────────────
-  if (process.env.RESEND_API_KEY && process.env.RESEND_FROM) {
-    const isRu = safeLang === 'ru';
-    const subject = isRu
-      ? 'Ваш анализ сделки готов — AI DealCheck'
-      : 'Your deal analysis is ready — AI DealCheck';
-    const html = isRu ? `
+  // ── Welcome email to the lead ──────────────────────────────────────────────
+  // Sent immediately when the lead submits the form. Brevo is preferred (because
+  // the aidealcheck.com domain is authenticated there); Resend is the fallback
+  // for legacy setups. If neither service is configured, we skip silently.
+  const isRu = safeLang === 'ru';
+  const welcomeSubject = isRu
+    ? 'Ваш анализ сделки готов — AI DealCheck'
+    : 'Your deal analysis is ready — AI DealCheck';
+  const welcomeHtml = isRu ? `
 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0a;color:#f0f0f0;padding:32px;border-radius:12px">
   <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">AI DealCheck</div>
   <div style="font-size:16px;font-weight:600;margin-bottom:16px">Привет, ${safeFirst}!</div>
@@ -198,8 +201,8 @@ export default async function handler(req, res) {
     Если сделка оказалась сложной — <strong style="color:#f0f0f0">напишите мне напрямую</strong>. 10+ лет в автобизнесе США, помогу выторговать лучшие условия.
   </p>
   <a href="https://www.instagram.com/pereprodavec_vlad/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
-  <a href="https://t.me/pereprodavec_usa" style="display:inline-block;padding:12px 24px;background:#229ED9;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">✈️ Telegram</a>
-  <p style="color:#555;font-size:12px;margin-top:32px">Влад · IG @pereprodavec_vlad · TG @pereprodavec_usa</p>
+  <a href="tel:+19498707365" style="display:inline-block;padding:12px 24px;background:#25D366;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">📞 (949) 870-7365</a>
+  <p style="color:#555;font-size:12px;margin-top:32px">Влад · IG @pereprodavec_vlad · (949) 870-7365</p>
 </div>` : `
 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0a;color:#f0f0f0;padding:32px;border-radius:12px">
   <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">AI DealCheck</div>
@@ -211,10 +214,21 @@ export default async function handler(req, res) {
     If the deal looked complicated or you found red flags — <strong style="color:#f0f0f0">reach out directly</strong>. I have 10+ years inside US dealerships and can negotiate on your behalf.
   </p>
   <a href="https://www.instagram.com/pereprodavec_vlad/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
-  <a href="https://t.me/pereprodavec_usa" style="display:inline-block;padding:12px 24px;background:#229ED9;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">✈️ Telegram</a>
-  <p style="color:#555;font-size:12px;margin-top:32px">Vlad · IG @pereprodavec_vlad · TG @pereprodavec_usa</p>
+  <a href="tel:+19498707365" style="display:inline-block;padding:12px 24px;background:#25D366;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">📞 (949) 870-7365</a>
+  <p style="color:#555;font-size:12px;margin-top:32px">Vlad · IG @pereprodavec_vlad · (949) 870-7365</p>
 </div>`;
 
+  // Prefer Brevo (domain-authenticated for aidealcheck.com). Fire-and-forget.
+  if (process.env.BREVO_API_KEY && process.env.BREVO_FROM_EMAIL) {
+    sendBrevoEmail({
+      to:      safeEmail,
+      toName:  safeFirst,
+      subject: welcomeSubject,
+      html:    welcomeHtml,
+      tags:    ['welcome', isRu ? 'ru' : 'en'],
+    }).catch(e => console.error('[brevo welcome]', e.message));
+  } else if (process.env.RESEND_API_KEY && process.env.RESEND_FROM) {
+    // Legacy fallback for accounts still on Resend.
     fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -224,10 +238,10 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: process.env.RESEND_FROM,
         to: safeEmail,
-        subject,
-        html
+        subject: welcomeSubject,
+        html: welcomeHtml
       })
-    }).catch(e => console.error('[resend]', e.message)); // fire-and-forget
+    }).catch(e => console.error('[resend welcome]', e.message));
   }
 
   return res.status(200).json({ ok: true, imageUrls });

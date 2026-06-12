@@ -1,5 +1,12 @@
 {
   "functions": {
-    "api/analyze.js": { "maxDuration": 60 }
-  }
+    "api/analyze.js":       { "maxDuration": 60 },
+    "api/cron-followup.js": { "maxDuration": 60 }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-followup",
+      "schedule": "0 15,3 * * *"
+    }
+  ]
 }
