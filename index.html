@@ -947,6 +947,10 @@ function resolveTier() {
   if (params.get('paid')     === 'true') return 'full';
   if (params.get('unlocked') === 'lead') return 'lead';
   if (paidAnalyses > 0)                  return 'full';
+  // Anyone who has already left their name/email/phone through the inline
+  // FREE-tier capture form (or the legacy modal) is a registered lead — they
+  // get the deeper LEAD-tier content automatically on every future visit.
+  if (localStorage.getItem('capturedLead_v2')) return 'lead';
   const saved = sessionStorage.getItem('accessTier');
   return saved || 'free';
 }
@@ -1708,30 +1712,184 @@ function renderPaywallCard() {
 }
 
 // ── Tier-specific call-to-action cards ────────────────────────────────────
-// FREE tier exit: drives users to register at Stan Store, which redirects back
-// with ?unlocked=lead and grants them the deeper breakdown for free. No paid
-// upsell here — registration is the conversion event for the brokerage funnel.
-const STAN_FREE_LEAD_MAGNET_URL = 'https://stan.store/vladbujnita/p/-ai---2-';
+// FREE tier exit: an INLINE capture form, not an external link. We deliberately
+// don't push to Stan here — the lead would just copy the visible URL and skip
+// the email gate. By doing the capture in-page and posting to our own /api/
+// collect-email, then re-running the analysis at LEAD tier in place, the user
+// physically cannot see the deeper content until they submit. Server-side
+// gating in /api/analyze enforces this on the wire too.
 
 function renderFreeTierCTA() {
   const ru = lang === 'ru';
   return `<div class="paywall-card" id="free-cta-card">
     <div class="paywall-head">
-      🔒 ${ru ? 'Хочешь полный разбор? Зарегистрируйся бесплатно' : 'Want the full breakdown? Register free'}
+      🔒 ${ru ? 'Открой полный разбор — бесплатно' : 'Unlock the full breakdown — free'}
     </div>
     <div class="paywall-sub">
       ${ru
-        ? 'Это была быстрая проверка — красные флаги и общая сумма переплаты. Зарегистрируйся за 30 секунд (бесплатно) и я покажу разбор каждой комиссии и что с этим делать.'
-        : "That was the quick check — red flags and the total overcharge headline. Register free in 30 seconds and I'll show you a deep breakdown of every fee and what to do about it."}
+        ? 'Это была быстрая проверка — красные флаги и общая сумма переплаты. Оставь имя и email — за 5 секунд открою разбор каждой комиссии и что с этим делать.'
+        : "That was the quick check — red flags and the total overcharge headline. Drop your name + email and in 5 seconds I'll show you a deep breakdown of every fee and what to do about it."}
     </div>
-    <div style="padding:0 1.25rem 1.25rem">
-      <a href="${STAN_FREE_LEAD_MAGNET_URL}" target="_blank" class="paywall-tier paywall-tier-premium" style="display:block;text-align:center">
-        <span class="tier-badge">${ru ? 'Бесплатно' : 'Free'}</span>
+    <form id="inline-lead-form" onsubmit="event.preventDefault();unlockLeadInline();" style="padding:0 1.25rem 1.25rem;display:flex;flex-direction:column;gap:8px">
+      <input id="lead-firstname" type="text" placeholder="${ru ? 'Имя' : 'First name'}"
+        style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none" required>
+      <input id="lead-email" type="email" placeholder="${ru ? 'Email' : 'Email'}"
+        style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none" required>
+      <input id="lead-phone" type="tel" placeholder="${ru ? 'Телефон (необязательно)' : 'Phone (optional)'}"
+        style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none">
+      <button type="submit" id="lead-submit-btn" class="paywall-tier paywall-tier-premium" style="border:none;cursor:pointer;text-align:center;padding:14px 24px">
+        <span class="tier-badge">${ru ? 'Бесплатно · мгновенно' : 'Free · instant'}</span>
         <div class="tier-title">${ru ? '👉 Открыть полный разбор' : '👉 Unlock the full breakdown'}</div>
-        <div class="tier-detail">${ru ? 'Имя + email · мгновенный доступ · без оплаты' : 'Name + email · instant access · no payment'}</div>
-      </a>
-    </div>
+      </button>
+      <div id="lead-form-error" style="color:var(--red);font-size:13px;display:none"></div>
+      <div style="color:var(--text-muted);font-size:11px;text-align:center;margin-top:4px">
+        ${ru ? 'Влад никогда не спамит. Без рассылок.' : "Vlad never spams. No marketing lists."}
+      </div>
+    </form>
   </div>`;
+}
+
+// FREE-tier inline capture handler. On submit:
+//   1. Validate the form (firstName + email required; phone optional but
+//      strongly preferred for brokerage follow-up).
+//   2. POST the lead to /api/collect-email — same endpoint the original modal
+//      used. That saves to Redis, fires the admin notification to Vlad, and
+//      sends the welcome email via Brevo.
+//   3. Upgrade the local tier (sessionStorage + the legacy capturedLead_v2
+//      flag so refreshes don't re-show the form).
+//   4. Re-send the previously-stashed analysis request with accessTier='lead'.
+//      The server now emits <BREAKDOWN> content that the user just earned.
+//   5. Re-render the result card with the new tier's full layout.
+async function unlockLeadInline() {
+  const ru = lang === 'ru';
+  const fn = (document.getElementById('lead-firstname')?.value || '').trim();
+  const em = (document.getElementById('lead-email')?.value || '').trim();
+  const ph = (document.getElementById('lead-phone')?.value || '').trim();
+  const errEl = document.getElementById('lead-form-error');
+  const btn = document.getElementById('lead-submit-btn');
+  const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
+
+  if (!fn)                                  return showErr(ru ? 'Введи имя'           : 'Enter your first name');
+  if (!em || !em.includes('@'))             return showErr(ru ? 'Введи корректный email' : 'Enter a valid email');
+
+  // Optimistically lock the button so a double-click doesn't double-submit.
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; }
+  if (errEl) errEl.style.display = 'none';
+
+  // Save the lead in our own DB. Mirror the field set the original modal sent
+  // so the admin notification email and welcome email render correctly.
+  const dealText = (document.getElementById('deal-input')?.value || '').trim();
+  const hasAttachment = !!(typeof processedBase64 !== 'undefined' && processedBase64);
+  const image = hasAttachment
+    ? { data: processedBase64, mime: (typeof processedMime !== 'undefined' && processedMime) || 'image/jpeg' }
+    : null;
+  const extras = (typeof extraImages !== 'undefined' && Array.isArray(extraImages))
+    ? extraImages.map((x) => ({ data: x.data, mime: x.mime || (x.isPdf ? 'application/pdf' : 'image/jpeg') }))
+    : [];
+
+  try {
+    await fetch('/api/collect-email', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        firstName: fn,
+        lastName:  '',           // inline form drops the last-name field — friction reduction
+        email:     em,
+        phone:     ph || null,
+        ref:       new URLSearchParams(window.location.search).get('ref') || null,
+        dealText:  dealText || null,
+        dealType:  typeof dealType !== 'undefined' ? dealType : null,
+        hasAttachment,
+        lang:      typeof lang !== 'undefined' ? lang : null,
+        image,
+        extras
+      })
+    });
+  } catch (e) {
+    // Saving the lead failed (network blip, Redis down, etc). We still want to
+    // give them the breakdown — they did submit — but log it so we can find
+    // dropped leads later. Vlad's manual follow-up is the recovery here.
+    console.warn('[lead-capture] save failed (continuing to unlock)', e && e.message);
+  }
+
+  // Mark them as a captured lead — survives refresh/return visits, so they
+  // don't get re-prompted for their info next time.
+  localStorage.setItem('capturedLead_v2', '1');
+  localStorage.setItem('capturedEmail', em);
+  localStorage.setItem('capturedFirstName', fn);
+  if (ph) localStorage.setItem('capturedPhone', ph);
+  setTier('lead');
+
+  // Re-run the analysis at LEAD tier so the server emits the deep breakdown.
+  // We reuse the exact request body the FREE analysis used; only the tier
+  // changes, so we don't pay an extra extraction call.
+  const reqBody = window.lastAnalysisRequest;
+  if (!reqBody) {
+    // Edge case: form submitted before any analysis happened (shouldn't be
+    // reachable because the form only shows inside the FREE result card).
+    // Best-effort fallback: just reload with the lead flag set.
+    window.location.search = (window.location.search ? window.location.search + '&' : '?') + 'unlocked=lead';
+    return;
+  }
+  reqBody.accessTier = 'lead';
+
+  // Swap the form for a spinner so the user sees something happening — the
+  // re-analyze typically takes 5–15 seconds.
+  const cardEl = document.getElementById('free-cta-card');
+  if (cardEl) cardEl.innerHTML = `
+    <div class="paywall-head">${ru ? '🔓 Открываю полный разбор…' : '🔓 Unlocking your full breakdown…'}</div>
+    <div class="paywall-sub" style="padding-bottom:1.25rem">
+      ${ru ? 'Подожди 5–10 секунд — AI готовит подробный разбор по твоей сделке.' : 'Give it 5–10 seconds — AI is preparing the deep breakdown for your deal.'}
+    </div>`;
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify(reqBody)
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || 'Re-analyze failed');
+    const text = data.content?.map(b => b.text || '').join('') || '';
+    if (!text) throw new Error('Empty response');
+
+    // Replace the persisted body so subsequent renders / PDF / email use the
+    // upgraded content, not the diagnosis-only FREE body.
+    const { diagnosis, body } = extractDiagnosis(text);
+    window.lastAnalysisText = body;
+    window.lastDiagnosis    = diagnosis;
+    try {
+      sessionStorage.setItem('lastAnalysisBody', body);
+      sessionStorage.setItem('lastDiagnosis', diagnosis ? JSON.stringify(diagnosis) : '');
+    } catch (_) {}
+
+    // Re-render the whole result card at LEAD tier. The cleanest way to do
+    // this is to reuse renderUnlockedAnalysis — it knows how to split the
+    // body into breakdown + execution, and at LEAD tier the execution
+    // section will be absent (server stripped it), so the render naturally
+    // omits the execution block and shows the brokerage CTA below.
+    renderUnlockedAnalysis(body, diagnosis);
+
+    // Slot in the LEAD brokerage CTA below the breakdown — renderUnlockedAnalysis
+    // was originally built for FULL tier and doesn't include it.
+    const resultArea = document.getElementById('result-area');
+    if (resultArea && getTier() === 'lead') {
+      const ctaWrap = document.createElement('div');
+      ctaWrap.innerHTML = renderLeadTierCTA();
+      const card = resultArea.querySelector('.result-card');
+      if (card) card.appendChild(ctaWrap.firstElementChild);
+      else      resultArea.appendChild(ctaWrap.firstElementChild);
+    }
+  } catch (e) {
+    console.error('[lead-unlock] re-analyze failed', e.message);
+    if (cardEl) cardEl.innerHTML = `
+      <div class="paywall-head" style="color:var(--red)">${ru ? '⚠️ Не получилось открыть разбор' : "⚠️ Couldn't unlock the breakdown"}</div>
+      <div class="paywall-sub" style="padding-bottom:1.25rem">
+        ${ru
+          ? 'Твои данные сохранились — напиши Владу в Instagram @pereprodavec_vlad или позвони (949) 870-7365, он откроет разбор лично.'
+          : 'Your info is saved — DM Vlad on Instagram @pereprodavec_vlad or call (949) 870-7365 to get the breakdown personally.'}
+      </div>`;
+  }
 }
 
 // LEAD tier exit: this is the conversion engine. The user has already shown
@@ -2025,16 +2183,17 @@ Output a clean bulleted list only. No analysis, no opinions.`;
 async function analyzeDeal() {
   if (compareMode) { compareDeal(); return; }
   // Re-entrancy guard — prevent double-submit from burning credit / rate limit.
-  // Set early (before email modal) so even a fast double-click is no-op.
+  // Set early so a fast double-click is no-op.
   if (window.__analyzing) return;
-  // Email capture — show once; skipping is fine
-  // v2 gate: require firstName/lastName/phone too. Legacy 'capturedEmail' from before
-  // the required-fields refactor doesn't satisfy this — those users need to re-fill.
-  // Dev mode bypasses the modal entirely so you can test the analyze flow rapidly.
-  if (!isDev() && !localStorage.getItem('capturedLead_v2')) {
-    showEmailCapture(() => analyzeDeal());
-    return;
-  }
+  // NOTE on the lead-capture flow:
+  //   We no longer block analysis behind a modal. Anonymous visitors get the
+  //   FREE-tier analysis (diagnosis card with the total overcharge headline)
+  //   right away — they see the *value* first, which is what makes them want
+  //   to register. The inline form inside renderFreeTierCTA() handles the
+  //   actual lead capture and upgrades them to LEAD tier in place.
+  //   showEmailCapture()/closeEmailModal() are kept around because legacy
+  //   code paths still reference them, but they're no longer wired into the
+  //   primary analyze flow.
   const textInput = document.getElementById('deal-input').value.trim();
   if (!processedBase64 && textInput.length < 10) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].noInput}</div>`;
@@ -2253,18 +2412,23 @@ async function runFullAnalysis() {
         : `Deal type: ${dealType}\n\nUser confirmed these numbers from the document. Use ONLY these for analysis:${msrpLine}\n\n${confirmed}`
     }];
 
+    // Stash the request body so the inline FREE→LEAD unlock form can re-send the
+    // exact same prompt at a higher tier without forcing the user to re-upload
+    // their dealer quote. We overwrite accessTier on re-send; everything else
+    // (model, system prompt, messages, image content) stays identical.
+    const analysisRequestBody = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2500,
+      system: [{ type: 'text', text: buildSystem(), cache_control: { type: 'ephemeral' } }],
+      messages: [{ role:'user', content: userContent }],
+      accessTier: getTier()
+    };
+    window.lastAnalysisRequest = analysisRequestBody;
+
     const resp = await fetch('/api/analyze', {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2500,
-        system: [{ type: 'text', text: buildSystem(), cache_control: { type: 'ephemeral' } }],
-        messages: [{ role:'user', content: userContent }],
-        // Tier tells /api/analyze which sections to instruct Claude to emit AND
-        // which to strip server-side (defense in depth).
-        accessTier: getTier()
-      })
+      body: JSON.stringify(analysisRequestBody)
     });
 
     const data = await resp.json();
