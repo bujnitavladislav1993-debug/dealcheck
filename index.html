@@ -931,6 +931,32 @@ function isDev() { return !!getDevKey(); }
 })();
 let paidAnalyses = parseInt(localStorage.getItem('paidAnalyses') || '0');
 
+// ── Three-tier access model ────────────────────────────────────────────────
+//  free  : default — sees red flags + total overcharge headline, then Stan-Store CTA
+//  lead  : came from Stan Store via ?unlocked=lead — sees deep breakdown + brokerage CTA
+//  full  : returned from Stripe via ?paid=true OR has legacy paidAnalyses — sees everything
+//
+// Resolution order on every page load (URL params always win so unlock links work):
+//   1. ?paid=true            → full   (also writes localStorage for backward compat)
+//   2. ?unlocked=lead        → lead   (kept in sessionStorage; tab-scoped)
+//   3. legacy paidAnalyses>0 → full   (existing paid customers don't lose access)
+//   4. saved sessionStorage  → that
+//   5. otherwise             → free
+function resolveTier() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('paid')     === 'true') return 'full';
+  if (params.get('unlocked') === 'lead') return 'lead';
+  if (paidAnalyses > 0)                  return 'full';
+  const saved = sessionStorage.getItem('accessTier');
+  return saved || 'free';
+}
+function setTier(t) { sessionStorage.setItem('accessTier', t); }
+function getTier()  { return resolveTier(); }
+// Persist the resolved tier on every load so a returning tab without URL params
+// keeps whatever tier the user reached last (until they close the tab — free goes
+// back to free in a new tab unless they re-click the unlock link).
+setTier(resolveTier());
+
 // Referral bonus — visiting with ?ref=CODE gives 1 extra free analysis this session
 if (new URLSearchParams(window.location.search).get('ref')) {
   sessionStorage.setItem('refBonus', '1');
@@ -1079,7 +1105,25 @@ function renderUnlockedAnalysis(body, diagnosis) {
         </span>
       </div>
       ${renderDiagnosisCard(diagnosis)}
-      <div class="result-body">${renderMarkdown(body)}</div>
+      ${(function () {
+        // Saved body may still contain <BREAKDOWN>/<EXECUTION> tags from when the
+        // analysis was originally run. Split them so the markdown renderer
+        // doesn't show the literal tag text, and so we can give the dealer-message
+        // execution package its own visual section.
+        const s = splitTierSections(body);
+        const main = [s.breakdown, s.remainder].filter(Boolean).join('\n\n');
+        const exec = s.execution;
+        const mainHtml = main ? `<div class="result-body">${renderMarkdown(main)}</div>` : '';
+        const execHtml = exec
+          ? `<div class="result-body" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+               <div style="font-family:Syne,sans-serif;font-size:0.85rem;font-weight:700;color:var(--accent);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.5rem">
+                 ${ru ? '🎯 Готовый пакет для торга' : '🎯 Execution package'}
+               </div>
+               ${renderMarkdown(exec)}
+             </div>`
+          : '';
+        return mainHtml + execHtml;
+      })()}
       <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
         <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
           📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
@@ -1522,6 +1566,30 @@ function removeExtraPage(i) {
   renderExtraPageSlots();
 }
 
+// ── Tier-section extraction (parses <BREAKDOWN> / <EXECUTION> tags) ──
+// The AI wraps the deep markdown analysis in <BREAKDOWN>…</BREAKDOWN> for LEAD+
+// users and the dealer message + negotiation script in <EXECUTION>…</EXECUTION>
+// for FULL users. The server strips disallowed sections before we see them, so
+// whatever made it here is what the user is allowed to see — we just need to
+// unwrap the tags for clean rendering.
+//
+// Returns { breakdown, execution, remainder }:
+//   breakdown   = markdown that goes in the locked deep-breakdown card (LEAD+)
+//   execution   = markdown for the dealer message + negotiation script (FULL only)
+//   remainder   = any markdown that fell outside both tagged sections — typically
+//                 empty, but if the model produced loose text we keep it visible
+//                 rather than silently drop it.
+function splitTierSections(text) {
+  let breakdown = '';
+  let execution = '';
+  const remainder = String(text || '')
+    .replace(/<BREAKDOWN>([\s\S]*?)<\/BREAKDOWN>/gi, (_, m) => { breakdown += m + '\n'; return ''; })
+    .replace(/<EXECUTION>([\s\S]*?)<\/EXECUTION>/gi, (_, m) => { execution += m + '\n'; return ''; })
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return { breakdown: breakdown.trim(), execution: execution.trim(), remainder };
+}
+
 // ── Diagnosis extraction (parses the JSON header the AI emits) ──
 // Returns { diagnosis, body } — diagnosis is the parsed JSON (or null on failure),
 // body is the markdown analysis with the JSON block stripped out.
@@ -1634,6 +1702,61 @@ function renderPaywallCard() {
         <div class="tier-price">$49</div>
         <div class="tier-title">${ru ? '+ Звонок со мной' : '+ Call with me'}</div>
         <div class="tier-detail">${ru ? 'Всё из $9 · 15 минут 1-на-1 с Владом · Calendly' : 'Everything in $9 · 15 min 1-on-1 with Vlad · Calendly'}</div>
+      </a>
+    </div>
+  </div>`;
+}
+
+// ── Tier-specific call-to-action cards ────────────────────────────────────
+// FREE tier exit: drives users to register at Stan Store, which redirects back
+// with ?unlocked=lead and grants them the deeper breakdown for free. No paid
+// upsell here — registration is the conversion event for the brokerage funnel.
+const STAN_FREE_LEAD_MAGNET_URL = 'https://stan.store/vladbujnita/p/-ai---2-';
+
+function renderFreeTierCTA() {
+  const ru = lang === 'ru';
+  return `<div class="paywall-card" id="free-cta-card">
+    <div class="paywall-head">
+      🔒 ${ru ? 'Хочешь полный разбор? Зарегистрируйся бесплатно' : 'Want the full breakdown? Register free'}
+    </div>
+    <div class="paywall-sub">
+      ${ru
+        ? 'Это была быстрая проверка — красные флаги и общая сумма переплаты. Зарегистрируйся за 30 секунд (бесплатно) и я покажу разбор каждой комиссии и что с этим делать.'
+        : "That was the quick check — red flags and the total overcharge headline. Register free in 30 seconds and I'll show you a deep breakdown of every fee and what to do about it."}
+    </div>
+    <div style="padding:0 1.25rem 1.25rem">
+      <a href="${STAN_FREE_LEAD_MAGNET_URL}" target="_blank" class="paywall-tier paywall-tier-premium" style="display:block;text-align:center">
+        <span class="tier-badge">${ru ? 'Бесплатно' : 'Free'}</span>
+        <div class="tier-title">${ru ? '👉 Открыть полный разбор' : '👉 Unlock the full breakdown'}</div>
+        <div class="tier-detail">${ru ? 'Имя + email · мгновенный доступ · без оплаты' : 'Name + email · instant access · no payment'}</div>
+      </a>
+    </div>
+  </div>`;
+}
+
+// LEAD tier exit: this is the conversion engine. The user has already shown
+// real interest (registered, completed an analysis, now seeing the deep
+// breakdown). The CTA pitches the free brokerage — dealer pays Vlad, buyer
+// pays $0 — which is the actual product the business sells. The execution
+// package (ready-to-send dealer message + negotiation script) is deliberately
+// withheld so this CTA isn't competing against a self-serve path.
+function renderLeadTierCTA() {
+  const ru = lang === 'ru';
+  return `<div class="paywall-card" id="lead-cta-card" style="border-color:var(--accent)">
+    <div class="paywall-head" style="color:var(--accent)">
+      🤝 ${ru ? 'Давай я займусь этим за тебя — бесплатно' : "Let me handle this for you — free"}
+    </div>
+    <div class="paywall-sub">
+      ${ru
+        ? 'Это сложно, и дилер делает это каждый день. 10+ лет внутри Mercedes научили меня, на что давить. Я лично проведу твою сделку: позвоню дилеру, выбью лучший money factor, проверю каждую цифру до подписания. Тебе это БЕСПЛАТНО — мне платит дилер.'
+        : "This is complex, and the dealer does it daily. 10+ years inside Mercedes taught me exactly what to push on. I'll personally handle your deal: call the dealer, negotiate the money factor, verify every line of the contract before you sign. FREE to you — the dealer pays me."}
+    </div>
+    <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+      <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#E1306C;color:#fff;border-color:#E1306C">
+        📱 ${ru ? 'Написать в Instagram' : 'DM on Instagram'}
+      </a>
+      <a href="tel:+19498707365" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#25D366;color:#fff;border-color:#25D366">
+        📞 (949) 870-7365
       </a>
     </div>
   </div>`;
@@ -1835,7 +1958,17 @@ Score: X/10 (be honest — 10 is unicorn deal, 5 is average, below 4 = problems)
 ═══════════════════════════════════════
 OUTPUT FORMAT — READ THIS BEFORE WRITING ANYTHING
 ═══════════════════════════════════════
-The VERY FIRST bytes of your response MUST be the diagnosis JSON block below — no prose, no headers, no whitespace before it. After the closing </DIAGNOSIS_JSON> tag, output the full markdown analysis exactly as specified in STEPS 1–3 above.
+Your response has up to THREE sections, in this order. The server will append an ACCESS TIER instruction below telling you WHICH of these to emit. Always emit the diagnosis JSON; emit the others only when permitted.
+
+  1. <DIAGNOSIS_JSON>…</DIAGNOSIS_JSON>   — ALWAYS emit first, no preceding whitespace
+  2. <BREAKDOWN>…</BREAKDOWN>             — emit only if the tier allows (lead, full)
+  3. <EXECUTION>…</EXECUTION>             — emit only if the tier allows (full only)
+
+The VERY FIRST bytes of your response MUST be the <DIAGNOSIS_JSON> block — no prose, no headers, no whitespace before it.
+
+After the closing </DIAGNOSIS_JSON> tag, IF the tier permits, write the full markdown analysis from STEPS 1–3 above WRAPPED IN <BREAKDOWN>…</BREAKDOWN> tags. The breakdown contains: NUMBERS / location / red flags / per-fee deep analysis / total cost reality check / score — but NOT the Negotiation Scripts section and NOT the ready-to-send dealer message.
+
+After the closing </BREAKDOWN> tag, IF the tier permits (full only), write the execution package WRAPPED IN <EXECUTION>…</EXECUTION> tags. The execution contains: the ready-to-send dealer message + the step-by-step Negotiation Scripts.
 
 This JSON powers the free-tier preview. Format exactly:
 
@@ -2127,7 +2260,10 @@ async function runFullAnalysis() {
         model: 'claude-sonnet-4-6',
         max_tokens: 2500,
         system: [{ type: 'text', text: buildSystem(), cache_control: { type: 'ephemeral' } }],
-        messages: [{ role:'user', content: userContent }]
+        messages: [{ role:'user', content: userContent }],
+        // Tier tells /api/analyze which sections to instruct Claude to emit AND
+        // which to strip server-side (defense in depth).
+        accessTier: getTier()
       })
     });
 
@@ -2162,9 +2298,43 @@ async function runFullAnalysis() {
     }
 
     const ru = lang === 'ru';
-    const paid = paidAnalyses > 0 || isDev();
-    const prescriptionClass = paid ? '' : 'prescription-locked';
-    const teaserHtml = paid ? '' : `<div class="prescription-teaser">${ru ? '🔒 Полный разбор — заблокирован' : '🔒 Full breakdown — locked'}</div>`;
+
+    // ── Tier-aware composition ───────────────────────────────────────────
+    // The server already stripped sections this user shouldn't see, so we just
+    // split what came back into breakdown + execution and render each tier its
+    // appropriate CTA. Dev mode always sees everything.
+    const tier = isDev() ? 'full' : getTier();
+    const sections = splitTierSections(body);
+
+    // The breakdown content can be missing (free tier) or present (lead/full).
+    // Likewise execution is FULL-only. Loose text outside the tags falls into
+    // `remainder` and is rendered with the breakdown so we don't silently drop it.
+    const breakdownMarkdown = [sections.breakdown, sections.remainder]
+      .filter(Boolean).join('\n\n');
+    const executionMarkdown = sections.execution;
+
+    // Choose the CTA based on tier:
+    //   free  → register at Stan Store (unlocks LEAD for free)
+    //   lead  → free brokerage offer (the actual paying-customer conversion)
+    //   full  → no CTA, the user already has everything
+    let ctaHtml = '';
+    if (tier === 'free') ctaHtml = renderFreeTierCTA();
+    else if (tier === 'lead') ctaHtml = renderLeadTierCTA();
+
+    const breakdownHtml = breakdownMarkdown
+      ? `<div class="result-body prescription-body">${renderMarkdown(breakdownMarkdown)}</div>`
+      : '';
+    const executionHtml = executionMarkdown
+      ? `<div class="result-body prescription-body" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+           <div style="font-family:Syne,sans-serif;font-size:0.85rem;font-weight:700;color:var(--accent);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.5rem">
+             ${ru ? '🎯 Готовый пакет для торга' : '🎯 Execution package'}
+           </div>
+           ${renderMarkdown(executionMarkdown)}
+         </div>`
+      : '';
+
+    // Anyone with full tier (paid or dev) gets the action buttons (PDF, email, etc).
+    const showActionButtons = tier === 'full';
 
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
@@ -2176,13 +2346,11 @@ async function runFullAnalysis() {
           <span class="verdict-badge ${vClass}">${vText}</span>
         </div>
         ${renderDiagnosisCard(diagnosis)}
-        ${teaserHtml}
-        <div class="${prescriptionClass}">
-          <div class="result-body prescription-body">${renderMarkdown(body)}</div>
-        </div>
-        ${!paid ? renderPaywallCard() : ''}
+        ${breakdownHtml}
+        ${executionHtml}
+        ${ctaHtml}
         <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
-          ${paid ? `
+          ${showActionButtons ? `
           <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
             📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
           </button>
