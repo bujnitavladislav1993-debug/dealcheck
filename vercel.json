@@ -1,4 +1,5 @@
 {
+  "cleanUrls": true,
   "functions": {
     "api/analyze.js":       { "maxDuration": 60 },
     "api/cron-followup.js": { "maxDuration": 60 }
