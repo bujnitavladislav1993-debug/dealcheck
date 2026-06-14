@@ -49,16 +49,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ── IP Rate Limiting (Upstash Redis) ────────────────────────────────────────
-  const RATE_LIMIT     = 1;
-  const WINDOW_SECS    = 72 * 3600;
-  const isFullAnalysis = (req.body?.max_tokens || 0) > 500;
-
-  const ip = (
-    req.headers['x-forwarded-for'] ||
-    req.socket?.remoteAddress ||
-    'unknown'
-  ).split(',')[0].trim();
+  // Rate limiting removed for free testing (was: 1 full analysis per IP / 72h via
+  // Upstash Redis). Restore from git history (commit 2264ba4) when the product is
+  // stable. The dev-key / devcheck logic below is unrelated and stays in place.
 
   const sentDevKey = (req.headers['x-dev-key'] || '').trim();
   const envDevKey  = (process.env.DEV_KEY || '').trim();
@@ -74,35 +67,6 @@ export default async function handler(req, res) {
     });
   }
 
-  if (!isDevRequest && isFullAnalysis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    try {
-      const base  = process.env.UPSTASH_REDIS_REST_URL;
-      const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-      const key   = `rl:${ip}`;
-      const auth  = { headers: { Authorization: `Bearer ${token}` } };
-
-      const incrRes = await fetch(`${base}/incr/${key}`, auth);
-      const { result: count } = await incrRes.json();
-
-      if (count === 1) {
-        fetch(`${base}/expire/${key}/${WINDOW_SECS}`, auth).catch(() => {});
-      }
-
-      if (count > RATE_LIMIT) {
-        return res.status(429).json({
-          error: {
-            message:
-              'Вы уже использовали бесплатный анализ. ' +
-              'Попробуйте снова через 72 часа или напишите @pereprodavec_vlad в Instagram для персональной консультации. ' +
-              '(Rate limit: 1 free analysis per IP per 72 hours.)'
-          }
-        });
-      }
-    } catch (rlErr) {
-      console.error('[rate-limit] Redis error, failing open:', rlErr.message);
-    }
-  }
-  // ────────────────────────────────────────────────────────────────────────────
 
   // Build the request that goes to Anthropic. We strip accessTier from the body
   // (it's our control field, not Anthropic's), and append the tier instruction
