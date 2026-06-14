@@ -14,25 +14,28 @@
 //  case the model over-produces.
 // ============================================================================
 
+// Output tiers: the dealer-message / negotiation-script EXECUTION block was
+// removed entirely (Vlad's call — the tool focuses on diagnosis + red flags
+// only; the brokerage CTA on the page sells him personally taking the deal).
+// Both LEAD and FULL tiers now emit identical content; the distinction is
+// purely about which CTA renders below it on the client.
 const TIER_INSTRUCTIONS = {
   free:
     'ACCESS TIER: FREE. Output ONLY the <DIAGNOSIS_JSON>{...}</DIAGNOSIS_JSON> ' +
-    'block — no markdown analysis, no <BREAKDOWN>, no <EXECUTION>. Save tokens. ' +
-    'The user will see red flags + total overcharge headline only; the app shows ' +
-    'a "register free to unlock full breakdown" call-to-action below it.',
+    'block — no markdown analysis, no <BREAKDOWN>. Save tokens. The user will ' +
+    'see red flags + total overcharge headline only; the app shows a "register ' +
+    'free to unlock full breakdown" call-to-action below it.',
   lead:
-    'ACCESS TIER: LEAD (registered via Stan Store). Output <DIAGNOSIS_JSON>{...}' +
-    '</DIAGNOSIS_JSON> followed by a <BREAKDOWN>…</BREAKDOWN> block containing ' +
-    'the full markdown analysis EXCEPT the "Negotiation Scripts" and "ready-to-send ' +
-    'dealer message" sections. End the breakdown with a paragraph that says, in the ' +
-    'response language: "Это сложно сделать самому — дилеры делают это каждый день. ' +
-    'Если хочешь, чтобы я вёл эту сделку лично, напиши мне." / "Doing this alone is ' +
-    'hard — dealers do it daily. If you want me to handle this deal personally, DM me." ' +
-    'DO NOT output <EXECUTION>. The execution package is the paid tier only.',
+    'ACCESS TIER: LEAD. Output <DIAGNOSIS_JSON>{...}</DIAGNOSIS_JSON> followed ' +
+    'by a <BREAKDOWN>…</BREAKDOWN> block containing the full markdown analysis: ' +
+    'NUMBERS / location / red flags / per-fee deep analysis / total cost reality ' +
+    'check / score. Do NOT write a ready-to-send dealer message, negotiation ' +
+    'scripts, or word-for-word phrases for the buyer to send to the dealer. The ' +
+    'tool analyzes the deal only; the buyer hires Vlad to actually negotiate.',
   full:
-    'ACCESS TIER: FULL (paid). Output all three sections: <DIAGNOSIS_JSON>{...}' +
-    '</DIAGNOSIS_JSON>, then <BREAKDOWN>…full markdown analysis…</BREAKDOWN>, then ' +
-    '<EXECUTION>…ready-to-send dealer message + step-by-step negotiation script…</EXECUTION>.',
+    'ACCESS TIER: FULL. Same content as LEAD — <DIAGNOSIS_JSON> followed by ' +
+    '<BREAKDOWN> with the full markdown analysis. Do NOT write any dealer ' +
+    'messages, negotiation scripts, or word-for-word phrases for the buyer.',
 };
 
 // Strip a section by tag name from a markdown string.

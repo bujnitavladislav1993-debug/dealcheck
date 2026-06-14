@@ -1132,9 +1132,6 @@ function renderUnlockedAnalysis(body, diagnosis) {
         return mainHtml + execHtml;
       })()}
       <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
-        <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
-          📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
-        </button>
         <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
           📄 ${ru ? 'Скачать PDF' : 'Download PDF'}
         </button>
@@ -2071,28 +2068,6 @@ Format EVERY red flag like this:
 
 If no real red flags: say exactly "Серьёзных красных флагов не обнаружено. Сделка выглядит честно." Be direct — a clean deal is a clean deal. Do NOT invent problems.
 
-## ВОПРОСЫ ДЛЯ ДИЛЕРА / QUESTIONS TO ASK
-3-5 sharp questions. Always ask about MSRP if not shown. Always ask about base money factor on leases.
-
-## СТРАТЕГИЯ / NEGOTIATION SCRIPTS
-Give word-for-word scripts the buyer can say or text the dealer. Be specific to THIS deal's numbers.
-
-Examples of scripts to adapt:
-- On price: "I've gotten quotes from [2 other dealers]. To earn my business today, I need the selling price at $[X]. Can you do that?"
-- On trade-in: "I have a CarMax offer for $[X] on my trade. Can you match or beat it?"
-- On money factor/APR: "What is the base buy rate from the bank, and how much are you marking it up?"
-- On fees: "I'd like to remove [specific fee] from the contract. That's not something I agreed to."
-- On accessories: "I didn't request those accessories. Please remove them or reduce the selling price by that amount."
-- On timing: "I'm ready to sign today if we can agree on price. Otherwise I'll come back end of month."
-
-Always include 2-3 scripts tailored to THIS specific deal's red flags.
-
-- Negotiate BEFORE entering the dealership — email or phone only
-- Get 2-3 competing quotes from other dealers first
-- Negotiate selling price FIRST, trade-in completely separately
-- Never reveal your target monthly payment — negotiate total price only
-- Discount targets: Southern California = 6-8% min, 10%+ on outgoing models. Midwest/Texas/other markets = 3-6% typical. Always research local inventory levels — overstock = more leverage.
-
 ## ИТОГОВАЯ СТОИМОСТЬ / TOTAL COST REALITY CHECK
 Always include this section. Show the real money at stake:
 - If CASH: Total out-of-pocket = selling price + all fees + taxes
@@ -2110,17 +2085,14 @@ Score: X/10 (be honest — 10 is unicorn deal, 5 is average, below 4 = problems)
 ═══════════════════════════════════════
 OUTPUT FORMAT — READ THIS BEFORE WRITING ANYTHING
 ═══════════════════════════════════════
-Your response has up to THREE sections, in this order. The server will append an ACCESS TIER instruction below telling you WHICH of these to emit. Always emit the diagnosis JSON; emit the others only when permitted.
+Your response has TWO sections, in this order. The server will append an ACCESS TIER instruction below telling you WHICH of these to emit. Always emit the diagnosis JSON; emit the breakdown only when permitted.
 
   1. <DIAGNOSIS_JSON>…</DIAGNOSIS_JSON>   — ALWAYS emit first, no preceding whitespace
   2. <BREAKDOWN>…</BREAKDOWN>             — emit only if the tier allows (lead, full)
-  3. <EXECUTION>…</EXECUTION>             — emit only if the tier allows (full only)
 
 The VERY FIRST bytes of your response MUST be the <DIAGNOSIS_JSON> block — no prose, no headers, no whitespace before it.
 
-After the closing </DIAGNOSIS_JSON> tag, IF the tier permits, write the full markdown analysis from STEPS 1–3 above WRAPPED IN <BREAKDOWN>…</BREAKDOWN> tags. The breakdown contains: NUMBERS / location / red flags / per-fee deep analysis / total cost reality check / score — but NOT the Negotiation Scripts section and NOT the ready-to-send dealer message.
-
-After the closing </BREAKDOWN> tag, IF the tier permits (full only), write the execution package WRAPPED IN <EXECUTION>…</EXECUTION> tags. The execution contains: the ready-to-send dealer message + the step-by-step Negotiation Scripts.
+After the closing </DIAGNOSIS_JSON> tag, IF the tier permits, write the full markdown analysis from STEPS 1–3 above WRAPPED IN <BREAKDOWN>…</BREAKDOWN> tags. The breakdown contains: NUMBERS / location / red flags / per-fee deep analysis / total cost reality check / score. **Do NOT produce any "Negotiation Scripts" section, any "ready-to-send dealer message", any "Готовое письмо дилеру", or any word-for-word scripts the buyer should send to the dealer.** This tool focuses ONLY on analyzing the deal and surfacing red flags. The brokerage path (Vlad personally taking the deal) is presented separately by the app; do NOT include it in the markdown.
 
 This JSON powers the free-tier preview. Format exactly:
 
@@ -2505,13 +2477,9 @@ async function runFullAnalysis() {
         </div>
         ${renderDiagnosisCard(diagnosis)}
         ${breakdownHtml}
-        ${executionHtml}
         ${ctaHtml}
         <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
           ${showActionButtons ? `
-          <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px">
-            📧 ${ru ? 'Письмо дилеру' : 'Write Email'}
-          </button>
           <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
             📄 ${ru ? 'Скачать PDF' : 'Download PDF'}
           </button>
@@ -2881,7 +2849,6 @@ async function runCompareAnalysis() {
         ${compareCtaHtml}
         <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
           ${fullActions ? `
-          <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center">📧 ${ru ? 'Письмо дилеру' : 'Write Email'}</button>
           <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📄 ${ru ? 'Скачать PDF' : 'Download PDF'}</button>
           <button onclick="shareAnalysis('${ru ? 'Сравнил 2 сделки через DealCheck' : 'Compared 2 deals with DealCheck'}','verdict-warning',this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📋 ${ru ? 'Скопировать' : 'Copy'}</button>` : ''}
           <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;border-color:var(--accent);color:var(--accent)">🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}</button>
