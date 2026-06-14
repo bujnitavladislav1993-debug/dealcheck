@@ -941,6 +941,11 @@ let paidAnalyses = parseInt(localStorage.getItem('paidAnalyses') || '0');
 //   4. saved sessionStorage  → that
 //   5. otherwise             → free
 function resolveTier() {
+  // Dev mode always sees FULL — for Vlad's own testing, ?dev=KEY enrollment
+  // bypasses every tier gate and rate limit (server-side too). Checked first
+  // so a stale localStorage 'free' value doesn't accidentally lock Vlad out
+  // of the deep breakdown while he's iterating on the prompt.
+  if (typeof isDev === 'function' && isDev()) return 'full';
   const params = new URLSearchParams(window.location.search);
   if (params.get('paid')     === 'true') return 'full';
   if (params.get('unlocked') === 'lead') return 'lead';
