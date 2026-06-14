@@ -164,8 +164,10 @@ export default async function handler(req, res) {
         block.text = stripSection(block.text, 'thinking');
         // 2. Tier gating.
         if (tier === 'free') {
-          block.text = stripSection(block.text, 'BREAKDOWN');
-          block.text = stripSection(block.text, 'EXECUTION');
+          // Keep ONLY the DIAGNOSIS_JSON block — discard everything else
+          // regardless of whether the model wrapped it in tags or not.
+          const diagMatch = block.text.match(/<DIAGNOSIS_JSON>[\s\S]*?<\/DIAGNOSIS_JSON>/i);
+          block.text = diagMatch ? diagMatch[0] : '';
         } else if (tier === 'lead') {
           block.text = stripSection(block.text, 'EXECUTION');
         }

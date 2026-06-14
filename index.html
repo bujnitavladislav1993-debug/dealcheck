@@ -1583,6 +1583,10 @@ function removeExtraPage(i) {
 //   remainder   = any markdown that fell outside both tagged sections — typically
 //                 empty, but if the model produced loose text we keep it visible
 //                 rather than silently drop it.
+function stripThinking(t) {
+  return t.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+}
+
 function splitTierSections(text) {
   let breakdown = '';
   let execution = '';
@@ -1831,7 +1835,7 @@ async function unlockLeadInline() {
     });
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message || 'Re-analyze failed');
-    const text = data.content?.map(b => b.text || '').join('') || '';
+    const text = stripThinking(data.content?.map(b => b.text || '').join('') || '');
     if (!text) throw new Error('Empty response');
 
     // Replace the persisted body so subsequent renders / PDF / email use the
@@ -2206,7 +2210,7 @@ async function analyzeDeal() {
 
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    const extracted = data.content?.map(b => b.text||'').join('') || '';
+    const extracted = stripThinking(data.content?.map(b => b.text||'').join('') || '');
     if (!extracted) throw new Error('Empty response from AI');
 
     showConfirmationStep(extracted);
@@ -2368,7 +2372,7 @@ async function runFullAnalysis() {
   const confirmed = document.getElementById('confirmed-numbers').value.trim();
   const msrp = (document.getElementById('msrp-input')?.value || '').trim();
   const msrpLine = msrp ? `\nMSRP (confirmed by user): ${msrp}` : '';
-  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+  startLoadingUI();
 
   try {
     const userContent = [{
@@ -2399,7 +2403,7 @@ async function runFullAnalysis() {
 
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    const text = data.content?.map(b => b.text||'').join('') || '';
+    const text = stripThinking(data.content?.map(b => b.text||'').join('') || '');
     if (!text) throw new Error('Empty response from AI');
 
     // Split AI output into the structured diagnosis header and the markdown body
@@ -2439,8 +2443,9 @@ async function runFullAnalysis() {
     // The breakdown content can be missing (free tier) or present (lead/full).
     // Likewise execution is FULL-only. Loose text outside the tags falls into
     // `remainder` and is rendered with the breakdown so we don't silently drop it.
-    const breakdownMarkdown = [sections.breakdown, sections.remainder]
-      .filter(Boolean).join('\n\n');
+    const breakdownMarkdown = tier === 'free'
+      ? ''
+      : [sections.breakdown, sections.remainder].filter(Boolean).join('\n\n');
     const executionMarkdown = sections.execution;
 
     // Choose the CTA based on tier:
@@ -2448,7 +2453,7 @@ async function runFullAnalysis() {
     //   lead  → free brokerage offer (the actual paying-customer conversion)
     //   full  → no CTA, the user already has everything
     let ctaHtml = '';
-    if (tier === 'free') ctaHtml = renderFreeTierCTA();
+    if (tier === 'free') ctaHtml = '<div id="paywall-placeholder"></div>';
     else if (tier === 'lead') ctaHtml = renderLeadTierCTA();
 
     const breakdownHtml = breakdownMarkdown
@@ -2522,14 +2527,15 @@ async function runFullAnalysis() {
     sessionStorage.setItem('analysisCount', analysisCount.toString());
     incrementGlobalCount();
     const remaining = getRemainingAnalyses();
-    if (remaining <= 0) {
-      setTimeout(() => appendPaywall(), 8000);
+    if (tier === 'free') {
+      setTimeout(() => appendPaywall(), 5000);
     } else {
       updateCounter();
     }
   } catch(err) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
   } finally {
+    stopLoadingUI();
     window.__analyzing = false;
   }
 }
@@ -2770,7 +2776,7 @@ async function compareDeal() {
     });
     const exData = await exResp.json();
     if (exData.error) throw new Error(exData.error.message || JSON.stringify(exData.error));
-    const extracted = exData.content?.map(b => b.text||'').join('') || '';
+    const extracted = stripThinking(exData.content?.map(b => b.text||'').join('') || '');
 
     window.__analyzing = false;
     btn.disabled = false;
@@ -2806,7 +2812,7 @@ async function runCompareAnalysis() {
   if (window.__analyzing) return;
   window.__analyzing = true;
   const confirmed = document.getElementById('confirmed-numbers-compare')?.value?.trim() || '';
-  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+  startLoadingUI();
 
   try {
     const userContent = [{ type:'text', text: confirmed || (ru ? 'Сравни эти две сделки.' : 'Compare these two deals.') }];
@@ -2823,7 +2829,7 @@ async function runCompareAnalysis() {
     });
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    const text = data.content?.map(b => b.text||'').join('') || '';
+    const text = stripThinking(data.content?.map(b => b.text||'').join('') || '');
     if (!text) throw new Error('Empty response from AI');
 
     // Same gating logic as runFullAnalysis — free users see a teaser + paywall,
@@ -2837,7 +2843,7 @@ async function runCompareAnalysis() {
     // payment intent through the LEAD CTA's contact options instead.
     const compareTier = isDev() ? 'full' : getTier();
     const fullActions = compareTier === 'full';
-    const compareCtaHtml = compareTier === 'free' ? renderFreeTierCTA()
+    const compareCtaHtml = compareTier === 'free' ? '<div id="paywall-placeholder"></div>'
                          : compareTier === 'lead' ? renderLeadTierCTA()
                          : '';
     document.getElementById('result-area').innerHTML = `
@@ -2861,11 +2867,12 @@ async function runCompareAnalysis() {
     sessionStorage.setItem('analysisCount', analysisCount.toString());
     incrementGlobalCount();
     const remaining = getRemainingAnalyses();
-    if (remaining <= 0) setTimeout(() => appendPaywall(), 8000);
+    if (compareTier === 'free') setTimeout(() => appendPaywall(), 5000);
     else updateCounter();
   } catch(err) {
     document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
   } finally {
+    stopLoadingUI();
     window.__analyzing = false;
     const compareBtn = document.getElementById('analyze-btn');
     if (compareBtn) { compareBtn.disabled = false; compareBtn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →'; }
@@ -3034,13 +3041,59 @@ function shareWithRef(btn) {
   });
 }
 
-// Legacy soft-sell trigger — used to append the $9/$49 paywall ~8s after
-// analysis finished. The three-tier funnel makes the breakdown free for any
-// registered lead, so the paid paywall here would directly contradict the new
-// FREE→LEAD inline form and the LEAD brokerage CTA already on the page.
-// Kept as a no-op so any lingering setTimeout callers (compare flow, etc.)
-// don't reference an undefined function.
-function appendPaywall() { /* intentionally a no-op — see comment above */ }
+// Injects the free-tier email capture card into the placeholder div that was
+// left in the result card on initial render. Called 5s after analysis so the
+// user reads the diagnosis before the form appears.
+let _loadingMsgTimer = null;
+let _loadingBarTimer = null;
+
+function startLoadingUI() {
+  const messages = [
+    'Читаю документ...',
+    'Проверяю цифры...',
+    'Ищу скрытые наценки...',
+    'Готовлю анализ...'
+  ];
+  document.getElementById('result-area').innerHTML = `
+    <div style="text-align:center;padding:2.5rem 1rem">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <div id="loading-msg" style="margin-top:1.25rem;font-size:14px;color:var(--text-muted);font-family:Inter,sans-serif;min-height:1.4em">${messages[0]}</div>
+      <div style="margin-top:1rem;width:220px;margin-left:auto;margin-right:auto">
+        <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div id="loading-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.5s linear"></div>
+        </div>
+      </div>
+    </div>`;
+
+  let msgIdx = 0;
+  _loadingMsgTimer = setInterval(() => {
+    msgIdx = Math.min(msgIdx + 1, messages.length - 1);
+    const el = document.getElementById('loading-msg');
+    if (el) el.textContent = messages[msgIdx];
+  }, 8000);
+
+  const startTime = Date.now();
+  _loadingBarTimer = setInterval(() => {
+    const pct = Math.min(90, ((Date.now() - startTime) / 45000) * 90);
+    const bar = document.getElementById('loading-bar');
+    if (bar) bar.style.width = pct + '%';
+  }, 500);
+}
+
+function stopLoadingUI() {
+  clearInterval(_loadingMsgTimer);
+  clearInterval(_loadingBarTimer);
+  _loadingMsgTimer = null;
+  _loadingBarTimer = null;
+}
+
+function appendPaywall() {
+  const placeholder = document.getElementById('paywall-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderFreeTierCTA();
+  placeholder.replaceWith(tmp.firstElementChild);
+}
 
 
 </script>
