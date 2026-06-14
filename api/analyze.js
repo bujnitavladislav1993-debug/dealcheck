@@ -144,13 +144,22 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── Server-side tier gating ────────────────────────────────────────────
-    // Even if Claude over-produces, strip disallowed sections from each text
-    // block before returning. A free-tier user gets nothing past the diagnosis;
-    // a lead-tier user gets the breakdown but no execution package.
+    // ── Response post-processing ─────────────────────────────────────────
+    // Two passes per text block:
+    //   1. Strip any <thinking>…</thinking> chain-of-thought the model emitted.
+    //      Some Claude responses leak the model's internal narration in English
+    //      even when the user's chosen language is Russian — the user should
+    //      never see it regardless of tier.
+    //   2. Tier-gate: even if Claude over-produces, strip disallowed sections
+    //      from each text block before returning. A free-tier user gets
+    //      nothing past the diagnosis; a lead-tier user gets the breakdown
+    //      but no execution package.
     if (response.ok && data?.content && Array.isArray(data.content)) {
       for (const block of data.content) {
         if (block?.type !== 'text' || typeof block.text !== 'string') continue;
+        // 1. Always strip <thinking> blocks — they're never user-facing.
+        block.text = stripSection(block.text, 'thinking');
+        // 2. Tier gating.
         if (tier === 'free') {
           block.text = stripSection(block.text, 'BREAKDOWN');
           block.text = stripSection(block.text, 'EXECUTION');
