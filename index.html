@@ -764,14 +764,12 @@
   <div class="trust-item"><span class="num">RU/EN</span> <span id="t4">двуязычный</span></div>
 </div>
 
-<!-- Legacy payment gate — kept in DOM (display:none) because showAnalyzer()
-     and the ref-bonus banner reference it by id. With the new freemium
-     model the first check is free, so this card never displays. -->
-<div class="payment-section" id="payment-section" style="display:none">
+<!-- Legacy payment gate — placeholder kept in DOM only because showAnalyzer()
+     and the ref-bonus banner still reference it by id. The three-tier funnel
+     replaces this; the Stripe checkout link was removed so nothing here can
+     surface a $9 / $49 charge under any code path. -->
+<div class="payment-section" id="payment-section" style="display:none" aria-hidden="true">
   <div class="payment-title" id="pay-title"></div>
-  <div class="payment-methods">
-    <a href="https://buy.stripe.com/8x2bJ04IQ6Au3Fg1J0bbG01" target="_blank" class="pay-btn primary">Card / Stripe</a>
-  </div>
   <div class="payment-note" id="pay-note"></div>
 </div>
 
@@ -1684,37 +1682,13 @@ function renderDiagnosisCard(diag) {
   </div>`;
 }
 
-// Two-tier paywall card. Each tier has its own Stripe product so checkout
-// shows the correct amount and we can distinguish $9 vs $49 buyers on return
-// (the $49 Stripe link's success URL must include `?paid=true&tier=49`).
-function renderPaywallCard() {
-  const ru = lang === 'ru';
-  const STRIPE_9_URL  = 'https://buy.stripe.com/8x2bJ04IQ6Au3Fg1J0bbG01';  // $9  — Full Breakdown
-  const STRIPE_49_URL = 'https://buy.stripe.com/bJe3cu7V2cYSgs2bjAbbG02';  // $49 — + 15-min consultation
-  return `<div class="paywall-card" id="paywall-card">
-    <div class="paywall-head">
-      🔒 ${ru ? 'Это была быстрая проверка — откройте полный разбор' : 'That was the quick check — unlock the full breakdown'}
-    </div>
-    <div class="paywall-sub">
-      ${ru
-        ? 'Покажу ПОЧЕМУ каждая проблема — это проблема, какая должна быть честная цена, и дам точные слова для дилера. Без воды.'
-        : 'I\'ll show you WHY each issue is a problem, what the fair price should actually be, and give you the exact words to use with the dealer. No fluff.'}
-    </div>
-    <div class="paywall-tiers">
-      <a href="${STRIPE_9_URL}" target="_blank" class="paywall-tier">
-        <div class="tier-price">$9</div>
-        <div class="tier-title">${ru ? 'Полный разбор' : 'Full Breakdown'}</div>
-        <div class="tier-detail">${ru ? 'Все объяснения · скрипты для дилера · PDF' : 'All explanations · dealer scripts · PDF export'}</div>
-      </a>
-      <a href="${STRIPE_49_URL}" target="_blank" class="paywall-tier paywall-tier-premium">
-        <span class="tier-badge">${ru ? 'Рекомендую' : 'Best value'}</span>
-        <div class="tier-price">$49</div>
-        <div class="tier-title">${ru ? '+ Звонок со мной' : '+ Call with me'}</div>
-        <div class="tier-detail">${ru ? 'Всё из $9 · 15 минут 1-на-1 с Владом · Calendly' : 'Everything in $9 · 15 min 1-on-1 with Vlad · Calendly'}</div>
-      </a>
-    </div>
-  </div>`;
-}
+// Legacy two-tier paywall ($9 Full Breakdown / $49 + Call with me). Neutralized
+// in the three-tier funnel: the breakdown is now free for any captured lead,
+// and the "$49 call" tier has been folded into the LEAD-tier brokerage CTA
+// (which offers a free Calendly booking instead of a paid Stripe checkout).
+// Kept as a guaranteed-empty function so any stale call-site can't surface
+// $9 / $49 cards on the page.
+function renderPaywallCard() { return ''; }
 
 // ── Tier-specific call-to-action cards ────────────────────────────────────
 // FREE tier exit: an INLINE capture form, not an external link. We deliberately
@@ -1922,12 +1896,15 @@ function renderLeadTierCTA() {
         📞 (949) 870-7365
       </a>
     </div>
-    <div style="padding:0 1.25rem 1.25rem;text-align:center;font-size:13px;color:var(--text-muted)">
-      ${ru ? 'или забронируй разговор по календарю:' : 'or book a call on the calendar:'}
-      <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
-        style="display:inline-block;margin-top:6px;color:var(--accent);font-weight:700;text-decoration:none;border-bottom:1px solid var(--accent);padding-bottom:1px">
-        📅 ${ru ? 'Записаться на консультацию' : 'Book a consultation'}
+    <div style="border-top:1px solid var(--border);margin:0 1.25rem;padding:1rem 0;text-align:center;font-size:13px;color:var(--text-muted)">
+      ${ru ? 'или забронируй личную 15-минутную консультацию:' : 'or book a personal 15-minute consultation:'}
+      <a href="https://buy.stripe.com/bJe3cu7V2cYSgs2bjAbbG02" target="_blank"
+        style="display:inline-block;margin-top:8px;padding:10px 18px;background:var(--accent);color:#000;font-weight:700;text-decoration:none;border-radius:8px;font-family:Syne,sans-serif">
+        📅 ${ru ? 'Консультация — $49' : 'Consultation — $49'}
       </a>
+      <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
+        ${ru ? '15 минут 1-на-1 со мной · через Calendly после оплаты' : '15 min 1-on-1 with me · Calendly link after payment'}
+      </div>
     </div>
   </div>`;
 }
