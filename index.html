@@ -1909,12 +1909,19 @@ function renderLeadTierCTA() {
         ? 'Это сложно, и дилер делает это каждый день. 10+ лет внутри Mercedes научили меня, на что давить. Я лично проведу твою сделку: позвоню дилеру, выбью лучший money factor, проверю каждую цифру до подписания. Тебе это БЕСПЛАТНО — мне платит дилер.'
         : "This is complex, and the dealer does it daily. 10+ years inside Mercedes taught me exactly what to push on. I'll personally handle your deal: call the dealer, negotiate the money factor, verify every line of the contract before you sign. FREE to you — the dealer pays me."}
     </div>
-    <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;padding:0 1.25rem 0.75rem;flex-wrap:wrap">
       <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#E1306C;color:#fff;border-color:#E1306C">
         📱 ${ru ? 'Написать в Instagram' : 'DM on Instagram'}
       </a>
       <a href="tel:+19498707365" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#25D366;color:#fff;border-color:#25D366">
         📞 (949) 870-7365
+      </a>
+    </div>
+    <div style="padding:0 1.25rem 1.25rem;text-align:center;font-size:13px;color:var(--text-muted)">
+      ${ru ? 'или забронируй разговор по календарю:' : 'or book a call on the calendar:'}
+      <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
+        style="display:inline-block;margin-top:6px;color:var(--accent);font-weight:700;text-decoration:none;border-bottom:1px solid var(--accent);padding-bottom:1px">
+        📅 ${ru ? 'Записаться на консультацию' : 'Book a consultation'}
       </a>
     </div>
   </div>`;
@@ -2868,21 +2875,25 @@ async function runCompareAnalysis() {
     // paid users get the full comparison + action buttons.
     window.lastAnalysisText = text;
     try { sessionStorage.setItem('lastAnalysisBody', text); sessionStorage.setItem('lastDiagnosis', ''); } catch (_) {}
-    const paid = paidAnalyses > 0 || isDev();
-    const prescriptionClass = paid ? '' : 'prescription-locked';
-    const teaserHtml = paid ? '' : `<div class="prescription-teaser">${ru ? '🔒 Полное сравнение — заблокировано' : '🔒 Full comparison — locked'}</div>`;
+
+    // Compare-deals output is treated as LEAD-tier content: free to see for any
+    // captured lead, with the brokerage CTA below to convert. We no longer blur
+    // it or gate it behind the $9/$49 paywall — the three-tier funnel routes
+    // payment intent through the LEAD CTA's contact options instead.
+    const compareTier = isDev() ? 'full' : getTier();
+    const fullActions = compareTier === 'full';
+    const compareCtaHtml = compareTier === 'free' ? renderFreeTierCTA()
+                         : compareTier === 'lead' ? renderLeadTierCTA()
+                         : '';
     document.getElementById('result-area').innerHTML = `
       <div class="result-card">
         <div class="result-header">
           <span class="verdict-badge verdict-warning">⚖️ ${ru ? 'СРАВНЕНИЕ СДЕЛОК' : 'DEAL COMPARISON'}</span>
         </div>
-        ${teaserHtml}
-        <div class="${prescriptionClass}">
-          <div class="result-body prescription-body">${renderMarkdown(text)}</div>
-        </div>
-        ${!paid ? renderPaywallCard() : ''}
+        <div class="result-body">${renderMarkdown(text)}</div>
+        ${compareCtaHtml}
         <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
-          ${paid ? `
+          ${fullActions ? `
           <button onclick="generateEmail()" class="pay-btn" style="flex:1;min-width:140px;justify-content:center">📧 ${ru ? 'Письмо дилеру' : 'Write Email'}</button>
           <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📄 ${ru ? 'Скачать PDF' : 'Download PDF'}</button>
           <button onclick="shareAnalysis('${ru ? 'Сравнил 2 сделки через DealCheck' : 'Compared 2 deals with DealCheck'}','verdict-warning',this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📋 ${ru ? 'Скопировать' : 'Copy'}</button>` : ''}
@@ -3069,19 +3080,13 @@ function shareWithRef(btn) {
   });
 }
 
-function appendPaywall() {
-  // Skip if a paywall card is already on the page (the new diagnosis flow renders one inline)
-  if (document.getElementById('paywall-card')) return;
-  // Don't hide the result - just append the two-tier paywall below it.
-  // Reuses renderPaywallCard() so pricing/copy stays in one place.
-  const resultArea = document.getElementById('result-area');
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = renderPaywallCard();
-  const card = wrapper.firstElementChild;
-  if (!card) return;
-  resultArea.appendChild(card);
-  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
+// Legacy soft-sell trigger — used to append the $9/$49 paywall ~8s after
+// analysis finished. The three-tier funnel makes the breakdown free for any
+// registered lead, so the paid paywall here would directly contradict the new
+// FREE→LEAD inline form and the LEAD brokerage CTA already on the page.
+// Kept as a no-op so any lingering setTimeout callers (compare flow, etc.)
+// don't reference an undefined function.
+function appendPaywall() { /* intentionally a no-op — see comment above */ }
 
 
 </script>
