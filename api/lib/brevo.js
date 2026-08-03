@@ -9,7 +9,7 @@
 //
 // Replies route to carswithvlad1@gmail.com so Vlad reads everything from his Gmail.
 
-export async function sendBrevoEmail({ to, toName, subject, html, tags }) {
+export async function sendBrevoEmail({ to, toName, subject, html, tags, attachments }) {
   const apiKey    = process.env.BREVO_API_KEY;
   const fromEmail = process.env.BREVO_FROM_EMAIL;
   const fromName  = process.env.BREVO_FROM_NAME || 'AI DealCheck';
@@ -30,6 +30,7 @@ export async function sendBrevoEmail({ to, toName, subject, html, tags }) {
         subject,
         htmlContent: html,
         tags: Array.isArray(tags) && tags.length ? tags : undefined,
+        attachment: Array.isArray(attachments) && attachments.length ? attachments : undefined,
       }),
     });
     if (!res.ok) {

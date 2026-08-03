@@ -119,9 +119,11 @@ export default async function handler(req, res) {
   }
 
   // ── Admin notification email (Vlad's inbox the moment a lead lands) ───────
-  // Requires RESEND_API_KEY + RESEND_FROM + RESEND_ADMIN. Fire-and-forget so it
-  // never delays the user response.
-  if (process.env.RESEND_API_KEY && process.env.RESEND_FROM && process.env.RESEND_ADMIN) {
+  // Sent via Brevo — the service actually configured for aidealcheck.com. (The
+  // old code gated this on RESEND_* vars that were never set, so Vlad never got
+  // notified.) Fire-and-forget. Recipient defaults to Vlad's Gmail; override
+  // with ADMIN_NOTIFY_EMAIL.
+  if (process.env.BREVO_API_KEY && process.env.BREVO_FROM_EMAIL) {
     const dealLine = safeDealText
       ? safeDealText.slice(0, 600) + (safeDealText.length > 600 ? '…' : '')
       : '(no typed deal text — see attachment)';
@@ -152,34 +154,27 @@ export default async function handler(req, res) {
     const attachments = [];
     if (image && image.data) {
       attachments.push({
-        filename: `deal.${image.mime === 'application/pdf' ? 'pdf' : 'jpg'}`,
+        name: `deal.${image.mime === 'application/pdf' ? 'pdf' : 'jpg'}`,
         content: image.data,
       });
     }
     if (Array.isArray(extras)) {
       extras.slice(0, 4).forEach((x, i) => {
         if (x && x.data) attachments.push({
-          filename: `page-${i + 2}.${x.mime === 'application/pdf' ? 'pdf' : 'jpg'}`,
+          name: `page-${i + 2}.${x.mime === 'application/pdf' ? 'pdf' : 'jpg'}`,
           content: x.data,
         });
       });
     }
 
-    fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
-      },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM,
-        to: process.env.RESEND_ADMIN,
-        subject: `🔥 New lead: ${safeFirst} ${safeLast}${safeDealType ? ' · ' + safeDealType : ''}`,
-        html: adminHtml,
-        attachments: attachments.length ? attachments : undefined,
-        reply_to: safeEmail,
-      })
-    }).catch(e => console.error('[resend admin]', e.message)); // fire-and-forget
+    sendBrevoEmail({
+      to:          process.env.ADMIN_NOTIFY_EMAIL || 'carswithvlad1@gmail.com',
+      toName:      'Vlad',
+      subject:     `🔥 New lead: ${safeFirst} ${safeLast}${safeDealType ? ' · ' + safeDealType : ''}`,
+      html:        adminHtml,
+      tags:        ['admin-lead'],
+      attachments: attachments.length ? attachments : undefined,
+    }).catch(e => console.error('[brevo admin]', e.message)); // fire-and-forget
   }
 
   // ── Welcome email to the lead ──────────────────────────────────────────────
