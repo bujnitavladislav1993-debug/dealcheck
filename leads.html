@@ -27,8 +27,6 @@
   .container { max-width: 1200px; margin: 0 auto; }
   h1 { font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--accent); }
   .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 1.5rem; }
-
-  /* ── Auth gate ── */
   .gate {
     max-width: 360px; margin: 6rem auto; background: var(--surface);
     border: 1px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center;
@@ -46,8 +44,6 @@
     background: var(--accent); color: #000; font-weight: 700; cursor: pointer; font-size: 14px;
   }
   .gate .err { color: var(--red); font-size: 13px; margin-top: 0.5rem; }
-
-  /* ── Toolbar ── */
   .toolbar {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap;
@@ -65,8 +61,6 @@
     min-width: 220px;
   }
   .search:focus { border-color: var(--accent); }
-
-  /* ── Table ── */
   table {
     width: 100%; border-collapse: collapse; background: var(--surface);
     border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
@@ -86,8 +80,6 @@
   td.muted { color: var(--text-muted); }
   td.date { white-space: nowrap; color: var(--text-dim); }
   .empty { text-align: center; padding: 3rem; color: var(--text-muted); }
-
-  /* ── Deal column ── */
   td.deal { max-width: 340px; }
   .badges { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
   .badge {
@@ -110,24 +102,21 @@
   }
   .err-banner { background: #2a1010; border: 1px solid var(--red); color: var(--red);
     padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
-
-  /* ── Photo column ── */
   td.photos { width: 1px; white-space: nowrap; }
-  .thumbs { display: flex; gap: 4px; }
+  .thumbs { display: flex; gap: 4px; flex-wrap: wrap; }
   .thumb {
-    width: 48px; height: 48px; border-radius: 6px; background: var(--surface2)
-      no-repeat center/cover; border: 1px solid var(--border); cursor: pointer;
+    width: 52px; height: 52px; border-radius: 6px; background: var(--surface2);
+    border: 1px solid var(--border); cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center;
-    font-size: 18px; color: var(--text-muted); text-decoration: none;
-    transition: border-color .15s;
+    font-size: 20px; color: var(--text-muted); text-decoration: none;
+    transition: border-color .15s; overflow: hidden; flex-shrink: 0;
   }
   .thumb:hover { border-color: var(--accent); }
-  .thumb.pdf { background: var(--surface2); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 </style>
 </head>
 <body>
 
-<!-- ── Auth gate ── -->
 <div id="gate" class="gate">
   <h2>🔒 Admin access</h2>
   <p>Enter the admin password to view leads.</p>
@@ -137,41 +126,27 @@
   <div id="gate-err" class="err" style="display:none">Invalid password</div>
 </div>
 
-<!-- ── Main UI ── -->
 <div id="app" class="container" style="display:none">
   <h1>📊 AI DealCheck — Leads</h1>
   <div class="subtitle">All collected leads, newest first</div>
-
   <div class="toolbar">
-    <div>
-      <span class="count" id="count">…</span>
-    </div>
+    <div><span class="count" id="count">…</span></div>
     <div style="display:flex;gap:0.5rem;align-items:center">
-      <input type="text" id="search" class="search" placeholder="Search name / email / phone…"
-        oninput="renderTable()">
+      <input type="text" id="search" class="search" placeholder="Search name / email / phone…" oninput="renderTable()">
       <button class="btn" onclick="refresh()">↻ Refresh</button>
       <button class="btn btn-primary" onclick="downloadCsv()">↓ Download CSV</button>
       <button class="btn" onclick="logout()">Log out</button>
     </div>
   </div>
-
   <div id="error" class="err-banner" style="display:none"></div>
-
   <table id="leads-table">
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>Photo</th>
-        <th>Deal</th>
-        <th>Ref</th>
+        <th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Photo</th><th>Deal</th><th>Ref</th>
       </tr>
     </thead>
     <tbody id="leads-body"></tbody>
   </table>
-
   <div id="empty" class="empty" style="display:none">No leads match your search.</div>
 </div>
 
@@ -183,10 +158,7 @@ async function login() {
   if (!key) return;
   try {
     const r = await fetch('/api/leads?key=' + encodeURIComponent(key));
-    if (r.status === 401) {
-      document.getElementById('gate-err').style.display = 'block';
-      return;
-    }
+    if (r.status === 401) { document.getElementById('gate-err').style.display = 'block'; return; }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     sessionStorage.setItem('adminKey', key);
@@ -207,68 +179,50 @@ function showApp(data) {
 
 function renderTable() {
   const q = document.getElementById('search').value.toLowerCase().trim();
-  const filtered = q
-    ? allLeads.filter((l) => JSON.stringify(l).toLowerCase().includes(q))
-    : allLeads;
+  const filtered = q ? allLeads.filter((l) => JSON.stringify(l).toLowerCase().includes(q)) : allLeads;
   const tbody = document.getElementById('leads-body');
   const empty = document.getElementById('empty');
-  if (filtered.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
+  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = filtered.map((l, i) => {
-    const date = l.ts ? new Date(l.ts).toLocaleString() : '—';
-    const name = [l.firstName, l.lastName].filter(Boolean).join(' ') || '<span class="muted">—</span>';
-    const email = l.email
-      ? '<a href="mailto:' + escapeHtml(l.email) + '">' + escapeHtml(l.email) + '</a>'
-      : '<span class="muted">—</span>';
-    const phone = l.phone
-      ? '<a href="tel:' + escapeHtml(l.phone) + '">' + escapeHtml(l.phone) + '</a>'
-      : '<span class="muted">—</span>';
-    const ref = l.ref ? escapeHtml(l.ref) : '<span class="muted">—</span>';
+    const date  = l.ts ? new Date(l.ts).toLocaleString() : '—';
+    const name  = [l.firstName, l.lastName].filter(Boolean).join(' ') || '<span class="muted">—</span>';
+    const email = l.email ? '<a href="mailto:' + escapeHtml(l.email) + '">' + escapeHtml(l.email) + '</a>' : '<span class="muted">—</span>';
+    const phone = l.phone ? '<a href="tel:'   + escapeHtml(l.phone) + '">' + escapeHtml(l.phone) + '</a>' : '<span class="muted">—</span>';
+    const ref   = l.ref ? escapeHtml(l.ref) : '<span class="muted">—</span>';
 
-    // Deal column: badge for type + attachment, plus truncated text preview
-    let dealCell = '';
     const badges = [];
-    if (l.dealType)      badges.push('<span class="badge badge-type">' + escapeHtml(l.dealType) + '</span>');
-    if (l.hasAttachment) badges.push('<span class="badge badge-attach">📎 file</span>');
-    if (l.lang)          badges.push('<span class="badge badge-lang">' + escapeHtml(l.lang) + '</span>');
-    if (badges.length) dealCell += '<div class="badges">' + badges.join(' ') + '</div>';
+    if (l.dealType) badges.push('<span class="badge badge-type">' + escapeHtml(l.dealType) + '</span>');
+    if (l.hasAttachment) {
+      const firstUrl = Array.isArray(l.imageUrls) && l.imageUrls.length ? l.imageUrls[0] : null;
+      if (firstUrl) {
+        badges.push('<a class="badge badge-attach" href="' + escapeHtml(firstUrl) + '" target="_blank" rel="noopener" style="text-decoration:none">📎 FILE</a>');
+      } else {
+        badges.push('<span class="badge badge-attach" title="File not stored (old lead)" style="opacity:0.5">📎 FILE</span>');
+      }
+    }
+    if (l.lang) badges.push('<span class="badge badge-lang">' + escapeHtml(l.lang) + '</span>');
+
+    let dealCell = badges.length ? '<div class="badges">' + badges.join(' ') + '</div>' : '';
     if (l.dealText) {
       const preview = l.dealText.length > 80 ? l.dealText.slice(0, 80) + '…' : l.dealText;
-      dealCell += '<div class="deal-preview" onclick="toggleDeal(' + i + ')">'
-                + escapeHtml(preview) + '</div>'
-                + '<div class="deal-full" id="deal-full-' + i + '" style="display:none">'
-                + escapeHtml(l.dealText) + '</div>';
+      dealCell += '<div class="deal-preview" onclick="toggleDeal(' + i + ')">' + escapeHtml(preview) + '</div>'
+               +  '<div class="deal-full" id="deal-full-' + i + '" style="display:none">' + escapeHtml(l.dealText) + '</div>';
     } else if (!badges.length) {
       dealCell = '<span class="muted">—</span>';
     }
 
-    // Photo column: small clickable thumbnails for each Blob URL. PDFs get a
-    // generic "📄" tile because browsers can't render them as inline images.
     let photoCell = '<span class="muted">—</span>';
     if (Array.isArray(l.imageUrls) && l.imageUrls.length) {
       photoCell = '<div class="thumbs">' + l.imageUrls.map((u) => {
         const safe = escapeHtml(u);
-        const isPdf = /\.pdf(\?|$)/i.test(u);
-        return isPdf
-          ? '<a class="thumb pdf" href="' + safe + '" target="_blank" rel="noopener" title="Open PDF">📄</a>'
-          : '<a class="thumb" href="' + safe + '" target="_blank" rel="noopener" title="Open full size" '
-              + 'style="background-image:url(\'' + safe + '\')"></a>';
+        return /\.pdf(\?|$)/i.test(u)
+          ? '<a class="thumb" href="' + safe + '" target="_blank" rel="noopener">📄</a>'
+          : '<a class="thumb" href="' + safe + '" target="_blank" rel="noopener" title="Click to open full size"><img src="' + safe + '" alt="deal photo" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.textContent=\'🖼️\'"></a>';
       }).join('') + '</div>';
     }
 
-    return '<tr>' +
-      '<td class="date">' + escapeHtml(date) + '</td>' +
-      '<td>' + name + '</td>' +
-      '<td class="email">' + email + '</td>' +
-      '<td class="phone">' + phone + '</td>' +
-      '<td class="photos">' + photoCell + '</td>' +
-      '<td class="deal">' + dealCell + '</td>' +
-      '<td>' + ref + '</td>' +
-    '</tr>';
+    return '<tr><td class="date">' + escapeHtml(date) + '</td><td>' + name + '</td><td class="email">' + email + '</td><td class="phone">' + phone + '</td><td class="photos">' + photoCell + '</td><td class="deal">' + dealCell + '</td><td>' + ref + '</td></tr>';
   }).join('');
 }
 
@@ -276,19 +230,12 @@ function toggleDeal(i) {
   const preview = document.querySelectorAll('.deal-preview')[i];
   const full    = document.getElementById('deal-full-' + i);
   if (!full) return;
-  if (full.style.display === 'none') {
-    full.style.display = 'block';
-    if (preview) preview.style.display = 'none';
-  } else {
-    full.style.display = 'none';
-    if (preview) preview.style.display = 'block';
-  }
+  if (full.style.display === 'none') { full.style.display = 'block'; if (preview) preview.style.display = 'none'; }
+  else { full.style.display = 'none'; if (preview) preview.style.display = 'block'; }
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => (
-    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
-  ));
+  return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 async function refresh() {
@@ -320,7 +267,6 @@ function logout() {
   document.getElementById('gate-input').value = '';
 }
 
-// Auto-login if key already in session
 (function init() {
   const key = sessionStorage.getItem('adminKey');
   if (!key) return;
