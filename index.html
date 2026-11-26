@@ -379,7 +379,7 @@
       <p class="lede" data-i18n="ct_p">Send us the car you have in mind — or just your budget — and we'll come back with a plan and real numbers. No obligation.</p>
       <div class="reach">
         <div class="row"><span>✆</span><span class="copyable" data-copy="(949) 870-7365">(949) 870-7365</span></div>
-        <div class="row"><span>✉</span><span class="copyable" data-copy="hello@aidealcheck.com">hello@aidealcheck.com</span></div>
+        <div class="row"><span>✉</span><span class="copyable" data-copy="carswithvlad1@gmail.com">carswithvlad1@gmail.com</span></div>
         <div class="row"><span>✈</span><a href="https://t.me/+aRz3J3WTfYY1Njgx" target="_blank" rel="noopener" data-i18n="reach_tg">Telegram — daily deals</a></div>
         <div class="row"><span>◎</span><a href="https://instagram.com/dealcheck_by_vlad" target="_blank" rel="noopener">Instagram @dealcheck_by_vlad</a></div>
         <div class="row"><span>♪</span><a href="https://www.tiktok.com/@dealcheck_by_vlad" target="_blank" rel="noopener">TikTok @dealcheck_by_vlad</a></div>
@@ -387,10 +387,13 @@
     </div>
     <form id="lead" novalidate>
       <div class="two">
-        <div class="field"><label for="f-name" data-i18n="ct_name">Name</label><input id="f-name" name="name" autocomplete="name" required></div>
-        <div class="field"><label for="f-phone" data-i18n="ct_phone">Phone</label><input id="f-phone" name="phone" type="tel" autocomplete="tel" required></div>
+        <div class="field"><label for="f-first" data-i18n="ct_first">First name</label><input id="f-first" name="firstName" autocomplete="given-name" required></div>
+        <div class="field"><label for="f-last" data-i18n="ct_last">Last name</label><input id="f-last" name="lastName" autocomplete="family-name" required></div>
       </div>
-      <div class="field"><label for="f-email" data-i18n="ct_email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
+      <div class="two">
+        <div class="field"><label for="f-phone" data-i18n="ct_phone">Phone</label><input id="f-phone" name="phone" type="tel" autocomplete="tel" minlength="7" required></div>
+        <div class="field"><label for="f-email" data-i18n="ct_email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
+      </div>
       <div class="field"><label for="f-int" data-i18n="ct_int">I'm interested in</label>
         <select id="f-int" name="interest">
           <option value="new" data-i18n="ct_o1">Buying / leasing a new car</option>
@@ -495,7 +498,7 @@
     demo_vl:"Переплата",
     ct_eyebrow:"Начать", ct_h2:"Расскажите, что ищете.",
     ct_p:"Напишите, какая машина на уме — или просто бюджет — и мы вернёмся с планом и реальными цифрами. Без обязательств.",
-    ct_name:"Имя", ct_phone:"Телефон", ct_email:"Email", ct_int:"Меня интересует",
+    ct_first:"Имя", ct_last:"Фамилия", ct_phone:"Телефон", ct_email:"Email", ct_int:"Меня интересует",
     ct_o1:"Покупка / лизинг новой машины", ct_o2:"Подбор авто с пробегом", ct_o3:"Продажа / trade-in", ct_o4:"Проверка имеющегося расчёта",
     ct_msg:"Какая машина или бюджет на уме?", ct_submit:"Отправить заявку",
     reach_tg:"Telegram — спецпредложения",
@@ -565,8 +568,8 @@
     var sel = document.getElementById('f-int');
     var interestLabel = sel.options[sel.selectedIndex].textContent;
     var payload = {
-      firstName: document.getElementById('f-name').value.trim(),
-      lastName:  '',
+      firstName: document.getElementById('f-first').value.trim(),
+      lastName:  document.getElementById('f-last').value.trim(),
       email:     document.getElementById('f-email').value.trim(),
       phone:     document.getElementById('f-phone').value.trim(),
       dealType:  sel.value,
