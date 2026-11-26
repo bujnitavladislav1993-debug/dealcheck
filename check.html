@@ -1,0 +1,3100 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI DealCheck — Проверка автомобильной сделки</title>
+<meta name="description" content="AI проверка вашей сделки — лизинг, кредит, наличные, контракт. Найдём красные флаги до подписания.">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DealCheck">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.18);
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --text-dim: #555;
+    --accent: #c9a84c;
+    --accent-dim: rgba(201,168,76,0.12);
+    --accent-border: rgba(201,168,76,0.3);
+    --green: #2ecc71;
+    --green-bg: rgba(46,204,113,0.1);
+    --red: #e74c3c;
+    --red-bg: rgba(231,76,60,0.1);
+    --amber: #f39c12;
+    --amber-bg: rgba(243,156,18,0.1);
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .lang-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .lang-btn {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .lang-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .hero {
+    text-align: center;
+    padding: 4rem 2rem 3rem;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto 2rem;
+  }
+
+  .price-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 2.5rem;
+  }
+
+  .price-badge {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .price-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .payment-section {
+    max-width: 560px;
+    margin: 0 auto 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+  }
+
+  .payment-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .payment-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .pay-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+    text-decoration: none;
+  }
+
+  .pay-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .pay-btn.primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .pay-btn.primary:hover { opacity: 0.9; }
+
+  .payment-note {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .divider-payment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 1.25rem 0;
+  }
+
+  .divider-payment hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+  .divider-payment span { font-size: 12px; color: var(--text-dim); }
+
+  .analyzer {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 0 1rem 4rem;
+  }
+
+  .unlock-banner {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+
+  .deal-types {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  .type-btn {
+    padding: 10px 6px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .type-btn .icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  .type-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .type-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+
+  .upload-zone {
+    border: 1.5px dashed var(--border-hover);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .upload-zone:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .upload-zone.dragover { border-color: var(--accent); background: var(--accent-dim); }
+  .upload-zone .upload-icon { font-size: 2rem; margin-bottom: 10px; }
+  .upload-zone .upload-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; font-family: 'Syne', sans-serif; }
+  .upload-zone .upload-sub { font-size: 13px; color: var(--text-muted); }
+
+  #file-input { display: none; }
+  #compress-canvas { display: none; }
+
+  .preview-area { margin-bottom: 1rem; display: none; }
+
+  .preview-img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  .preview-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .preview-meta span { font-size: 12px; color: var(--text-dim); }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: color 0.15s;
+  }
+
+  .remove-btn:hover { color: var(--red); }
+
+  .file-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .file-card span { font-size: 13px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .status-ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--green);
+    background: var(--green-bg);
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 1rem 0;
+  }
+
+  .or-divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+  .or-divider span { font-size: 12px; color: var(--text-dim); }
+
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    resize: vertical;
+    transition: border-color 0.15s;
+    margin-bottom: 1rem;
+  }
+
+  textarea:focus { outline: none; border-color: var(--accent); }
+  textarea::placeholder { color: var(--text-dim); }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--accent);
+    color: #000;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .analyze-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .locked-overlay {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+  }
+
+  .locked-overlay .lock-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .locked-overlay p { font-size: 14px; max-width: 320px; margin: 0 auto; }
+
+  .result-card {
+    margin-top: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .verdict-badge {
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .verdict-good { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,204,113,0.3); }
+  .verdict-warning { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(243,156,18,0.3); }
+  .verdict-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
+
+  .result-body {
+    padding: 1.25rem;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-muted);
+  }
+
+  .result-body strong, .result-body b { color: var(--text); }
+
+  .cta-box {
+    margin: 0 1.25rem 1.25rem;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .cta-box-text { font-size: 14px; color: var(--text); font-weight: 500; }
+  .cta-box-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .cta-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'Syne', sans-serif;
+    border-radius: var(--radius);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+
+  .cta-link:hover { opacity: 0.88; }
+
+  /* ── Diagnosis card (free-tier preview) ── */
+  .diagnosis-card {
+    margin: 0 1.25rem 1.25rem;
+    background: linear-gradient(180deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02));
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .diagnosis-summary {
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700;
+    color: var(--accent); margin-bottom: 1rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--accent-border);
+  }
+  .diagnosis-summary .muted { color: var(--text-muted); font-weight: 500; }
+  .diagnosis-clean { color: #4ade80; font-size: 0.95rem; font-weight: 600; }
+  .diag-issue {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .diag-issue:last-child { border-bottom: none; padding-bottom: 0; }
+  .diag-issue-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;
+  }
+  .diag-icon { font-size: 14px; }
+  .diag-category {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted); background: var(--surface2); padding: 2px 8px; border-radius: 999px;
+  }
+  .diag-amount {
+    margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 700;
+    color: var(--accent); font-size: 0.95rem;
+  }
+  .diag-label { color: var(--text); font-size: 14px; line-height: 1.5; }
+
+  /* ── Locked prescription (paywall blur) ── */
+  .prescription-locked { position: relative; }
+  .prescription-locked .prescription-body {
+    filter: blur(5px); user-select: none; pointer-events: none;
+    max-height: 380px; overflow: hidden;
+  }
+  .prescription-locked::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 180px;
+    background: linear-gradient(to bottom, transparent, var(--surface) 90%);
+    pointer-events: none;
+  }
+  .prescription-teaser {
+    font-size: 12px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.6px; padding: 0.5rem 1.25rem 0; font-weight: 600;
+  }
+
+  /* ── Two-tier paywall card ── */
+  .paywall-card {
+    margin: 1rem 1.25rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+  }
+  .paywall-head {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem;
+    color: var(--text); margin-bottom: 0.5rem;
+  }
+  .paywall-sub {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 1.25rem;
+    line-height: 1.5; max-width: 480px; margin-left: auto; margin-right: auto;
+  }
+  .paywall-tiers { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+  .paywall-tier {
+    flex: 1 1 200px; min-width: 200px; max-width: 280px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1rem;
+    text-decoration: none; color: var(--text);
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    position: relative; display: block;
+  }
+  .paywall-tier:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .paywall-tier-premium {
+    background: linear-gradient(180deg, var(--accent-dim), var(--surface2));
+    border-color: var(--accent);
+  }
+  .tier-price {
+    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+    color: var(--accent); line-height: 1; margin-bottom: 0.25rem;
+  }
+  .tier-title {
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700;
+    color: var(--text); margin-bottom: 0.4rem;
+  }
+  .tier-detail { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .tier-badge {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #000; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 10px; padding: 3px 10px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+  }
+
+  .loading-dots { display: inline-flex; gap: 5px; padding: 2rem 0; }
+  .loading-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: dot 1.2s infinite; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot { 0%,80%,100%{opacity:0.15} 40%{opacity:1} }
+
+  .error-msg {
+    padding: 12px 14px;
+    background: var(--red-bg);
+    color: var(--red);
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-top: 10px;
+    border: 1px solid rgba(231,76,60,0.2);
+  }
+
+  .trust-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .trust-item .num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 480px) {
+    nav { padding: 1rem; }
+    .hero { padding: 2.5rem 1rem 2rem; }
+    .payment-section { margin: 0 1rem 1.5rem; }
+    .payment-methods { grid-template-columns: 1fr; }
+    .deal-types { grid-template-columns: repeat(2, 1fr); }
+    .cta-box { flex-direction: column; text-align: center; }
+    .trust-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.25rem 1.5rem; }
+    .trust-item { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .trust-item .num { font-size: 1.2rem; }
+  }
+
+  /* ── PRINT / PDF REPORT ───────────────────────────────────── */
+  .print-header { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #result-area, #result-area * { visibility: visible; }
+    #result-area {
+      position: absolute; left: 0; top: 0;
+      width: 100%; padding: 2rem; box-sizing: border-box;
+    }
+    .pay-btn, button, .cta-box, .urgency-cta, .paywall-card, .prescription-teaser { display: none !important; visibility: hidden !important; }
+    /* Free users shouldn't be able to print the blurred content */
+    .prescription-locked { display: none !important; }
+    .prescription-locked .prescription-body { filter: none !important; max-height: none !important; }
+    .diagnosis-card { border-color: #aaa !important; background: #fff !important; color: #000 !important; }
+    .diagnosis-card * { color: #000 !important; }
+    .diag-amount { color: #000 !important; }
+    .print-header {
+      display: block !important; visibility: visible !important;
+      margin-bottom: 1.25rem; padding-bottom: 1rem;
+      border-bottom: 2px solid #333; color: #000;
+    }
+    .result-card { box-shadow: none !important; border: 1px solid #ddd !important; background: #fff !important; color: #000 !important; }
+    .result-body * { color: #000 !important; }
+    .verdict-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  /* ── EMAIL CAPTURE MODAL ──────────────────────────────────── */
+  .email-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(6px); z-index: 2000;
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+    animation: fadeIn 0.2s ease;
+  }
+  .email-modal-box {
+    background: var(--surface); border: 1px solid var(--accent-border);
+    border-radius: var(--radius-lg); padding: 2rem; max-width: 380px;
+    width: 100%; text-align: center;
+    animation: slideUp 0.25s ease;
+  }
+  .email-modal-box input[type="email"],
+  .email-modal-box input[type="tel"],
+  .email-modal-box input[type="text"] {
+    width: 100%; padding: 12px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif;
+    box-sizing: border-box; margin-bottom: 0.75rem; outline: none;
+    transition: border-color 0.15s;
+  }
+  .email-modal-box input:focus { border-color: var(--accent); }
+  .email-modal-box .name-row {
+    display: flex; gap: 0.5rem;
+  }
+  .email-modal-box .name-row input { flex: 1; }
+  .email-modal-box .optional-label {
+    font-size: 11px; color: var(--text-muted); text-align: left;
+    display: block; margin: -0.5rem 0 0.4rem 2px; opacity: 0.7;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(18px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* ── REF BONUS BANNER ─────────────────────────────────────── */
+  .ref-bonus-banner {
+    background: var(--accent-dim); border: 1px solid var(--accent-border);
+    border-radius: var(--radius); padding: 0.75rem 1rem;
+    font-size: 13px; color: var(--accent); text-align: center;
+    margin: 0 0 1rem; animation: slideUp 0.3s ease;
+  }
+</style>
+<!-- heic-to: in-browser HEIC→JPEG conversion. Uses a CURRENT libheif (v1.19)
+     build that decodes modern iPhone "grid"/tiled HEIC, which the older,
+     abandoned heic2any (libheif ~2019) failed on. The WASM is inlined in the
+     bundle, so there is no separate .wasm fetch to misconfigure. Loaded lazily
+     — only fetched when a non-Safari browser actually needs to convert a HEIC
+     (Safari/iOS decode HEIC natively in <img>/canvas and never hit this). -->
+<script>
+  window.ensureHeicConverter = (function() {
+    let p = null;
+    return function () {
+      if (window.HeicTo) return Promise.resolve(window.HeicTo);
+      if (p) return p;
+      p = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/heic-to@1.5.2/dist/iife/heic-to.js';
+        s.onload  = () => window.HeicTo
+          ? resolve(window.HeicTo)
+          : reject(new Error('HEIC converter loaded but global missing'));
+        s.onerror = () => { p = null; reject(new Error('Failed to load HEIC converter')); };
+        document.head.appendChild(s);
+      });
+      return p;
+    };
+  })();
+</script>
+</head>
+<body>
+
+<canvas id="compress-canvas" style="display:none"></canvas>
+<input type="file" id="file-input" accept="image/*,.heic,.heif,application/pdf" onchange="handleFile(event)" style="display:none">
+
+<!-- NAV -->
+<nav>
+  <div class="logo"><span>AI</span> Deal<span>Check</span></div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('ru')" id="btn-ru">🇷🇺 RU</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">🇺🇸 EN</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge" id="hero-badge">10+ ЛЕТ В АВТОБИЗНЕСЕ США · УСИЛЕНО AI</div>
+  <h1 id="hero-title">Не подписывайте контракт с дилером,<br>пока я не <em>проверю</em> цифры</h1>
+  <p id="hero-sub">Есть цена от автодилера? Я Влад, 10 лет в автобизнесе США. Пришлите email, скрин или фото — первая проверка бесплатно. С помощью AI за 2 минуты найду скрытые наценки и скажу, на что давить при торге.</p>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-item"><span class="num">10+</span> <span id="t1">лет в автобизнесе в США</span></div>
+  <div class="trust-item"><span class="num" id="deals-counter">—</span> <span id="t2">сделок проанализировано</span></div>
+  <div class="trust-item"><span class="num" id="t3-num">2 мин</span> <span id="t3">на анализ сделки</span></div>
+  <div class="trust-item"><span class="num">RU/EN</span> <span id="t4">двуязычный</span></div>
+</div>
+
+<!-- Legacy payment gate — placeholder kept in DOM only because showAnalyzer()
+     and the ref-bonus banner still reference it by id. The three-tier funnel
+     replaces this; the Stripe checkout link was removed so nothing here can
+     surface a $9 / $49 charge under any code path. -->
+<div class="payment-section" id="payment-section" style="display:none" aria-hidden="true">
+  <div class="payment-title" id="pay-title"></div>
+  <div class="payment-note" id="pay-note"></div>
+</div>
+
+<!-- ANALYZER -->
+<div class="analyzer">
+  <div class="unlock-banner" id="unlock-banner">✓ Доступ открыт — загрузите вашу сделку</div>
+
+  <div class="deal-types" id="deal-types-section" style="display:none">
+    <button class="type-btn active" onclick="setType('lease')" id="type-lease">
+      <span class="icon">🔄</span><span id="tl-lease">Лизинг</span>
+    </button>
+    <button class="type-btn" onclick="setType('finance')" id="type-finance">
+      <span class="icon">💳</span><span id="tl-finance">Кредит</span>
+    </button>
+    <button class="type-btn" onclick="setType('cash')" id="type-cash">
+      <span class="icon">💵</span><span id="tl-cash">Наличные</span>
+    </button>
+    <button class="type-btn" onclick="setType('contract')" id="type-contract">
+      <span class="icon">📄</span><span id="tl-contract">Контракт</span>
+    </button>
+  </div>
+
+  <div id="upload-section" style="display:none">
+
+    <!-- MODE TOGGLE -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <button onclick="setMode('single')" id="mode-single" class="type-btn active" style="flex:1;padding:10px">
+        🔍 <span id="mode-single-label">Анализ сделки</span>
+      </button>
+      <button onclick="setMode('compare')" id="mode-compare" class="type-btn" style="flex:1;padding:10px">
+        ⚖️ <span id="mode-compare-label">Сравнить 2 сделки</span>
+      </button>
+    </div>
+
+    <!-- DEAL A upload -->
+    <div id="label-a" style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;display:none">СДЕЛКА А / DEAL A</div>
+    <div class="upload-zone" id="upload-zone"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="handleDrag(event)"
+      ondragleave="handleDragLeave(event)"
+      ondrop="handleDrop(event)">
+      <div class="upload-icon">📎</div>
+      <div class="upload-title" id="upload-title">Есть предложение на авто от дилера?</div>
+      <div class="upload-sub" id="upload-sub">Просто загрузи файл сюда или напиши цифры вручную ниже</div>
+    </div>
+    <div class="preview-area" id="preview-area"></div>
+    <div id="extra-pages-container"></div>
+
+    <!-- DEAL B upload (compare mode only) -->
+    <div id="deal-b-section" style="display:none;margin-top:1rem">
+      <div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px">СДЕЛКА Б / DEAL B</div>
+      <input type="file" id="file-input-b" accept="image/*,.heic,.heif,application/pdf" onchange="handleFileB(event)" style="display:none">
+      <div class="upload-zone" id="upload-zone-b"
+        onclick="document.getElementById('file-input-b').click()"
+        ondragover="handleDragB(event)"
+        ondragleave="handleDragLeaveB(event)"
+        ondrop="handleDropB(event)">
+        <div class="upload-icon">📎</div>
+        <div class="upload-title">Второе предложение / Second quote</div>
+        <div class="upload-sub">Другой дилер, другая машина или другие условия</div>
+      </div>
+      <div class="preview-area" id="preview-area-b"></div>
+    </div>
+
+    <div class="or-divider">
+      <hr><span id="or-text">или введите вручную</span><hr>
+    </div>
+
+    <textarea id="deal-input" placeholder="Платёж $850/мес, due at signing $3,500, MSRP $72,000, selling price $69,500, money factor, срок, пробег..."></textarea>
+
+    <button class="analyze-btn" onclick="analyzeDeal()" id="analyze-btn">Проанализировать сделку →</button>
+
+    <div id="result-area"></div>
+  </div>
+
+  <!-- Legacy locked overlay — never visible in freemium model (analyzer is unlocked on load).
+       Kept in DOM because showAnalyzer() toggles it. -->
+  <div class="locked-overlay" id="locked-overlay" style="display:none">
+    <div class="lock-icon">🔒</div>
+    <p id="locked-text"></p>
+  </div>
+</div>
+
+<!-- DISCLAIMER -->
+<div style="max-width:680px;margin:0 auto;padding:1.5rem 2rem;border-top:1px solid var(--border)">
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.7;text-align:center">
+    <strong style="color:var(--text-muted)">DISCLAIMER / ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ</strong><br><br>
+    AI DealCheck provides general informational analysis only and does not constitute legal, financial, or professional advice. 
+    All analysis is generated by artificial intelligence based on information provided by the user and may contain errors or inaccuracies. 
+    Users are solely responsible for verifying all information independently before making any purchasing decisions. 
+    AI DealCheck, its creator, and affiliates are not responsible for any financial losses, damages, or decisions made based on this analysis. 
+    This tool does not represent any dealership, manufacturer, lender, or financial institution. 
+    Always consult a licensed professional before signing any contract.<br><br>
+    AI DealCheck предоставляет исключительно общую информацию и не является юридической, финансовой или профессиональной консультацией. 
+    Весь анализ генерируется искусственным интеллектом на основе данных, предоставленных пользователем, и может содержать неточности. 
+    Пользователь самостоятельно несёт ответственность за проверку всей информации перед принятием решения о покупке. 
+    AI DealCheck, его создатель и аффилированные лица не несут ответственности за любые финансовые потери или решения, принятые на основе данного анализа. 
+    Инструмент не представляет интересы дилерских центров, производителей, кредиторов или финансовых учреждений. 
+    Перед подписанием любого договора проконсультируйтесь с лицензированным специалистом.
+  </p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <strong style="color:var(--text)">AI DealCheck</strong> · 10+ лет в автоиндустрии США<br>
+  <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" style="color:var(--accent);text-decoration:none">pereprodavec_vlad</a> · Консультации:
+  <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" style="color:var(--accent);text-decoration:none">Calendly</a><br><br>
+  <span>© 2026 AI DealCheck. Все права защищены.</span>
+</footer>
+
+<script>
+let lang = 'ru';
+let dealType = 'lease';
+let compareMode = false;
+let processedBase64 = null;
+let processedMime = 'image/jpeg';
+let isPdf = false;
+let extraImages = []; // additional pages for single analysis mode (up to 2 more)
+let processedBase64_b = null;
+let processedMime_b = 'image/jpeg';
+let isPdf_b = false;
+let analysisCount = parseInt(sessionStorage.getItem('analysisCount') || '0');
+
+// ── DEV MODE ──────────────────────────────────────────────────────────────
+// Visit ?dev=KEY once to enroll this browser as a dev/testing client.
+// In dev mode: skip email modal, skip paywall (auto-paid), and send
+// x-dev-key on /api/analyze + /api/collect-email so the backend skips
+// rate-limit and lead storage.
+// To turn off: visit ?dev=off.
+(function devModeInit() {
+  const params = new URLSearchParams(window.location.search);
+  const devParam = params.get('dev');
+  if (devParam === 'off') {
+    localStorage.removeItem('devKey');
+  } else if (devParam) {
+    localStorage.setItem('devKey', devParam);
+  }
+  // Always strip ?dev= from the URL so the secret doesn't end up in screenshots,
+  // history, or referrer headers.
+  if (devParam !== null) {
+    params.delete('dev');
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+  }
+})();
+function getDevKey() { return localStorage.getItem('devKey') || ''; }
+function isDev() { return !!getDevKey(); }
+// Paid status persists across browser sessions — closing the tab shouldn't
+// "forget" a paid purchase. Migrate any legacy sessionStorage value once.
+(function migratePaidAnalyses() {
+  const legacy = sessionStorage.getItem('paidAnalyses');
+  if (legacy && !localStorage.getItem('paidAnalyses')) {
+    localStorage.setItem('paidAnalyses', legacy);
+    sessionStorage.removeItem('paidAnalyses');
+  }
+})();
+let paidAnalyses = parseInt(localStorage.getItem('paidAnalyses') || '0');
+
+// ── Three-tier access model ────────────────────────────────────────────────
+//  free  : default — sees red flags + total overcharge headline, then Stan-Store CTA
+//  lead  : came from Stan Store via ?unlocked=lead — sees deep breakdown + brokerage CTA
+//  full  : returned from Stripe via ?paid=true OR has legacy paidAnalyses — sees everything
+//
+// Resolution order on every page load (URL params always win so unlock links work):
+//   1. ?paid=true            → full   (also writes localStorage for backward compat)
+//   2. ?unlocked=lead        → lead   (kept in sessionStorage; tab-scoped)
+//   3. legacy paidAnalyses>0 → full   (existing paid customers don't lose access)
+//   4. saved sessionStorage  → that
+//   5. otherwise             → free
+function resolveTier() {
+  // Dev mode always sees FULL — for Vlad's own testing, ?dev=KEY enrollment
+  // bypasses every tier gate and rate limit (server-side too). Checked first
+  // so a stale localStorage 'free' value doesn't accidentally lock Vlad out
+  // of the deep breakdown while he's iterating on the prompt.
+  if (typeof isDev === 'function' && isDev()) return 'full';
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('paid')     === 'true') return 'full';
+  if (params.get('unlocked') === 'lead') return 'lead';
+  if (paidAnalyses > 0)                  return 'full';
+  // Anyone who has already left their name/email/phone through the inline
+  // FREE-tier capture form (or the legacy modal) is a registered lead — they
+  // get the deeper LEAD-tier content automatically on every future visit.
+  if (localStorage.getItem('capturedLead_v2')) return 'lead';
+  const saved = sessionStorage.getItem('accessTier');
+  return saved || 'free';
+}
+function setTier(t) { sessionStorage.setItem('accessTier', t); }
+function getTier()  { return resolveTier(); }
+// Persist the resolved tier on every load so a returning tab without URL params
+// keeps whatever tier the user reached last (until they close the tab — free goes
+// back to free in a new tab unless they re-click the unlock link).
+setTier(resolveTier());
+
+// Referral bonus — visiting with ?ref=CODE gives 1 extra free analysis this session
+if (new URLSearchParams(window.location.search).get('ref')) {
+  sessionStorage.setItem('refBonus', '1');
+}
+let refBonus = parseInt(sessionStorage.getItem('refBonus') || '0');
+
+// Global deal counter — real count from Upstash Redis, localStorage fallback
+const COUNTER_SEED = 847;
+function getLocalCount() {
+  return parseInt(localStorage.getItem('globalDealCount') || COUNTER_SEED);
+}
+function animateCounter(target) {
+  const el = document.getElementById('deals-counter');
+  if (!el) return;
+  const start = Math.max(target - 20, COUNTER_SEED);
+  let current = start;
+  const step = () => {
+    el.textContent = current.toLocaleString();
+    if (current < target) { current++; requestAnimationFrame(step); }
+  };
+  requestAnimationFrame(step);
+}
+async function fetchGlobalCount() {
+  try {
+    const r = await fetch('/api/counter');
+    const d = await r.json();
+    if (d.count) { animateCounter(d.count); return; }
+  } catch (_) {}
+  animateCounter(getLocalCount());
+}
+async function incrementGlobalCount() {
+  try {
+    const r = await fetch('/api/counter', { method: 'POST' });
+    const d = await r.json();
+    if (d.count) { animateCounter(d.count); return; }
+  } catch (_) {}
+  const next = getLocalCount() + 1;
+  localStorage.setItem('globalDealCount', next);
+  animateCounter(next);
+}
+
+function getRemainingAnalyses() {
+  const freeLimit = 1 + refBonus;
+  const paidLimit = paidAnalyses > 0 ? 3 : 0;
+  return (freeLimit + paidLimit) - analysisCount;
+}
+
+function isUnlocked() {
+  if (paidAnalyses > 0) return analysisCount < (4 + refBonus);
+  return analysisCount < (1 + refBonus);
+}
+
+// Auto-unlock if returning from Stripe payment.
+// $49 tier's Stripe success URL adds &tier=49 — we use that to show a
+// "book your consultation" Calendly card on top of the unlocked analysis.
+if (window.location.search.includes("paid=true")) {
+  paidAnalyses = 1;
+  localStorage.setItem('paidAnalyses', '1');
+  // Reset count so they get fresh 3 analyses
+  analysisCount = 0;
+  sessionStorage.setItem('analysisCount', '0');
+  // Remember the tier so it survives a refresh — the URL param goes away once
+  // we clean it up below.
+  const purchasedTier = new URLSearchParams(window.location.search).get('tier') === '49' ? '49' : '9';
+  localStorage.setItem('purchasedTier', purchasedTier);
+  window.addEventListener("DOMContentLoaded", function() {
+    // skipScroll so we land on the restored full analysis, not the upload zone
+    showAnalyzer({ skipScroll: true });
+    // If we stored their last analysis before checkout, re-render it with the full
+    // prescription unlocked. Otherwise they'd lose context after paying.
+    try {
+      const body = sessionStorage.getItem('lastAnalysisBody');
+      const diagStr = sessionStorage.getItem('lastDiagnosis');
+      if (body) {
+        const diagnosis = diagStr ? JSON.parse(diagStr) : null;
+        renderUnlockedAnalysis(body, diagnosis);
+      }
+      // $49 buyers get a prominent consultation booking card on top
+      if (purchasedTier === '49') showConsultationCTA();
+    } catch (e) { /* if anything goes wrong, just show the empty analyzer */ }
+  });
+}
+
+// Calendly booking card shown to $49 tier buyers immediately after payment.
+// Anchored at the top of #result-area so it's the first thing they see.
+function showConsultationCTA() {
+  const ru = lang === 'ru';
+  const area = document.getElementById('result-area');
+  if (!area) return;
+  const card = document.createElement('div');
+  card.style.cssText = 'margin:0 0 1.25rem;background:linear-gradient(180deg,var(--accent-dim),var(--surface));border:1px solid var(--accent);border-radius:var(--radius-lg);padding:1.5rem 1.25rem;text-align:center;';
+  card.innerHTML = `
+    <div style="font-size:1.6rem;margin-bottom:0.6rem">📅</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:var(--text);margin-bottom:0.4rem">
+      ${ru ? 'Спасибо! Теперь забронируйте звонок со мной' : 'Thanks! Now book your call with me'}
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.5">
+      ${ru
+        ? '15 минут 1-на-1 — разберём вашу сделку лично и решим что делать дальше.'
+        : '15 min 1-on-1 — we\'ll go through your deal together and decide what to do next.'}
+    </div>
+    <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
+      style="display:inline-block;padding:13px 28px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;border-radius:var(--radius);text-decoration:none">
+      ${ru ? 'Выбрать время →' : 'Pick a time →'}
+    </a>`;
+  area.insertBefore(card, area.firstChild);
+}
+
+// Render an already-completed analysis with the prescription fully unlocked.
+// Used after Stripe redirect so paid users see their full report immediately.
+function renderUnlockedAnalysis(body, diagnosis) {
+  const ru = lang === 'ru';
+  let vClass = 'verdict-warning', vText = T[lang].warn;
+  if (diagnosis && diagnosis.verdict) {
+    if (diagnosis.verdict === 'good')   { vClass = 'verdict-good';   vText = T[lang].good; }
+    if (diagnosis.verdict === 'danger') { vClass = 'verdict-danger'; vText = T[lang].danger; }
+  }
+  window.lastAnalysisText = body;
+  window.lastDiagnosis    = diagnosis;
+  const resultArea = document.getElementById('result-area');
+  if (!resultArea) return;
+  const dangerBlock = vClass === 'verdict-danger' ? `
+    <div style="margin:0 1.25rem 1.25rem;background:var(--red-bg);border:1px solid rgba(231,76,60,0.3);border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.2rem;margin-bottom:0.5rem">🚨</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--red);margin-bottom:0.4rem;font-size:0.95rem">
+        ${ru ? 'Серьёзные проблемы — не подписывайте без консультации' : 'Serious red flags — don\'t sign without a consultation'}
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
+        ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
+      </div>
+      <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank"
+        style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none;margin-right:8px">
+        📱 Instagram DM
+      </a>
+      <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank"
+        style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border:1px solid var(--red);color:var(--red);font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+        📅 ${ru ? 'Записаться' : 'Book call'}
+      </a>
+    </div>` : '';
+  resultArea.innerHTML = `
+    <div class="result-card">
+      <div class="result-header">
+        <span class="verdict-badge ${vClass}">${vText}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700;letter-spacing:0.5px">
+          ${ru ? '✓ ПОЛНЫЙ ДОСТУП' : '✓ FULL ACCESS'}
+        </span>
+      </div>
+      ${renderDiagnosisCard(diagnosis)}
+      ${(function () {
+        // Saved body may still contain <BREAKDOWN>/<EXECUTION> tags from when the
+        // analysis was originally run. Split them so the markdown renderer
+        // doesn't show the literal tag text, and so we can give the dealer-message
+        // execution package its own visual section.
+        const s = splitTierSections(body);
+        const main = [s.breakdown, s.remainder].filter(Boolean).join('\n\n');
+        const exec = s.execution;
+        const mainHtml = main ? `<div class="result-body">${renderMarkdown(main)}</div>` : '';
+        const execHtml = exec
+          ? `<div class="result-body" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+               <div style="font-family:Syne,sans-serif;font-size:0.85rem;font-weight:700;color:var(--accent);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.5rem">
+                 ${ru ? '🎯 Готовый пакет для торга' : '🎯 Execution package'}
+               </div>
+               ${renderMarkdown(exec)}
+             </div>`
+          : '';
+        return mainHtml + execHtml;
+      })()}
+      <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+        <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+          📄 ${ru ? 'Скачать PDF' : 'Download PDF'}
+        </button>
+        <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}', this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+          📋 ${ru ? 'Скопировать' : 'Copy'}
+        </button>
+        <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px;border-color:var(--accent);color:var(--accent)">
+          🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}
+        </button>
+      </div>
+      ${dangerBlock}
+      ${buildCtaBox(diagnosis, lang)}
+    </div>`;
+  resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Freemium model: analyzer is visible to everyone on page load.
+// First check is free; the post-analysis paywall handles monetization.
+window.addEventListener("DOMContentLoaded", function() {
+  showAnalyzer();
+  fetchGlobalCount();
+
+  // Dev banner — visible reminder that gates are bypassed and traffic is
+  // tagged as dev (so collect-email + rate limit are skipped server-side).
+  if (isDev()) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:sticky;top:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fff;padding:8px 16px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-align:center;border-bottom:2px solid #ea580c';
+    const turnOff = '<a href="?dev=off" style="color:#fed7aa;margin-left:8px;text-decoration:underline">turn off</a>';
+    bar.innerHTML = '🛠 DEV MODE — проверяю ключ… ' + turnOff;
+    document.body.insertBefore(bar, document.body.firstChild);
+    // Confirm the key actually works server-side — the banner must not claim a
+    // bypass that the backend will reject (DEV_KEY missing or key mismatch).
+    fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dev-key': getDevKey() },
+      body: JSON.stringify({ devcheck: true })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.dev) {
+          bar.innerHTML = '🛠 DEV MODE — email modal, paywall &amp; rate limit bypassed. ' + turnOff;
+        } else {
+          bar.style.background = '#7f1d1d';
+          const diag = `[envSet:${d?.envSet} envLen:${d?.envLen} sentLen:${d?.sentLen} sent:${d?.sentEdge}]`;
+          bar.innerHTML = '⚠️ DEV KEY НЕ РАБОТАЕТ ' + diag + ' ' + turnOff;
+        }
+      })
+      .catch(() => {
+        bar.style.background = '#7f1d1d';
+        bar.innerHTML = '⚠️ DEV MODE — не удалось проверить ключ (сеть). ' + turnOff;
+      });
+  }
+
+  // Show referral bonus banner if they arrived via a ref link
+  if (refBonus && new URLSearchParams(window.location.search).get('ref')) {
+    const ru = lang === 'ru';
+    const banner = document.createElement('div');
+    banner.className = 'ref-bonus-banner';
+    banner.innerHTML = ru
+      ? '🎁 Друг подарил вам дополнительный бесплатный анализ! Загружайте вашу сделку.'
+      : '🎁 A friend gifted you 1 extra free analysis! Upload your deal below.';
+    const paySection = document.getElementById('payment-section');
+    if (paySection) paySection.parentNode.insertBefore(banner, paySection.nextSibling);
+  }
+});
+
+// ── Contact links — update Telegram handle if different ──────────────────────
+const CONTACT = {
+  instagram: 'https://www.instagram.com/pereprodavec_vlad/',
+  telegram:  'https://t.me/pereprodavec_usa',
+  calendly:  'https://calendly.com/cars_with_vlad/new-meeting-2',
+};
+
+// Dynamic CTA based on deal score — drives brokerage leads
+function buildCtaBox(diagnosis, lang) {
+  const ru      = lang === 'ru';
+  const score   = diagnosis?.score || 5;
+  const overpay = diagnosis?.totalOverpay || 0;
+  const verdict = diagnosis?.verdict || 'warn';
+  const fmt     = (n) => '$' + Math.round(n).toLocaleString();
+
+  let text, sub, btn, href;
+  if (verdict === 'danger' || score <= 4) {
+    text = ru ? '🚨 Серьёзные флаги — хотите, я возьму эту сделку?' : '🚨 Serious red flags — want me to handle this deal for you?';
+    sub  = overpay > 0
+      ? (ru ? `Потенциальная переплата: ~${fmt(overpay)}` : `Potential overpayment: ~${fmt(overpay)}`)
+      : (ru ? 'Влад лично разберёт и выторгует лучшие условия.' : 'Vlad will personally negotiate better terms for you.');
+    btn  = ru ? 'Нанять меня →' : 'Hire me →';
+    href = CONTACT.instagram;
+  } else if (score <= 6) {
+    text = overpay > 0
+      ? (ru ? `💸 Вы оставляете ~${fmt(overpay)} на столе` : `💸 You're leaving ~${fmt(overpay)} on the table`)
+      : (ru ? '💸 Есть пространство для переговоров' : '💸 There\'s room to negotiate here');
+    sub  = ru ? 'Я могу выторговать это за вас. Мой гонорар меньше вашей переплаты.' : 'I can negotiate this for you. My fee is less than your overpayment.';
+    btn  = ru ? 'Записаться на звонок →' : 'Book a call →';
+    href = CONTACT.calendly;
+  } else {
+    text = ru ? '✅ Хорошая сделка — на следующую машину обратитесь ко мне заранее' : '✅ Good deal — for your next car, reach out before you visit the dealer';
+    sub  = ru ? '10+ лет в автобизнесе — помогу найти лучшее предложение на рынке.' : '10+ years in the business — I\'ll find you the best deal on the market.';
+    btn  = ru ? 'Связаться →' : 'Get in touch →';
+    href = CONTACT.calendly;
+  }
+  return `<div class="cta-box">
+    <div>
+      <div class="cta-box-text">${text}</div>
+      <div class="cta-box-sub">${sub}</div>
+    </div>
+    <a href="${href}" target="_blank" class="cta-link">${btn}</a>
+  </div>`;
+}
+
+const T = {
+  ru: {
+    heroBadge: '10+ ЛЕТ В АВТОБИЗНЕСЕ США · УСИЛЕНО AI',
+    heroTitle: 'Не подписывайте контракт с дилером,<br>пока я не <em>проверю</em> цифры',
+    heroSub: 'Есть цена от автодилера? Я Влад, 10 лет в автобизнесе США. Пришлите email, скрин или фото — первая проверка бесплатно. С помощью AI за 2 минуты найду скрытые наценки и скажу, на что давить при торге.',
+    t1:'лет в автобизнесе в США', t2:'сделок проанализировано', t3:'на анализ сделки', t4:'двуязычный',
+    t3num: '2 мин',
+    modeSingle: 'Анализ сделки',
+    modeCompare: 'Сравнить 2 сделки',
+    payTitle: '💳 Разблокировать анализ — $20',
+    payNote: 'Одноразовая оплата · Мгновенный доступ · Никаких подписок',
+    unlockBanner: '✓ Доступ открыт — загрузите вашу сделку',
+    types: { lease:'Лизинг', finance:'Кредит', cash:'Наличные', contract:'Контракт' },
+    uploadTitle: 'Есть предложение на авто от дилера?',
+    uploadSub: 'Просто загрузи файл сюда или напиши цифры вручную ниже',
+    orText: 'или введите вручную',
+    ph: {
+      lease: 'Пример: платёж $850/мес, первый взнос $3,500, цена машины $72,000, срок 36 мес, пробег 10,000 миль в год...',
+      finance: 'Пример: цена машины $45,000, первый взнос $5,000, ставка 7.9%, срок 72 мес, платёж $620/мес...',
+      cash: 'Пример: цена машины $38,000, дилер добавил защитное покрытие $1,200, регистрация $500, итого $41,200...',
+      contract: 'Вставьте любые цифры из вашего контракта — платёж, сумму финансирования, ставку, срок, доп. продукты...'
+    },
+    analyzeBtn: 'Проанализировать сделку →',
+    analyzing: 'Анализируем...',
+    processing: 'Обрабатываем изображение...',
+    ready: '✓ Готово к анализу',
+    lockedText: 'Оплатите $20 выше — и загружайте ваши цифры или фото от дилера. AI разберёт сделку за 2 минуты.',
+    good: '✓ СДЕЛКА ВЫГЛЯДИТ НОРМАЛЬНО',
+    warn: '⚠ ЕСТЬ ВОПРОСЫ',
+    danger: '🚩 НАЙДЕНЫ КРАСНЫЕ ФЛАГИ',
+    noInput: 'Загрузите фото или введите цифры сделки.',
+    ctaText: 'Нужен личный разбор сделки?',
+    ctaSub: 'Консультация с Владом — разберём вашу ситуацию',
+    ctaBtn: 'Записаться →',
+    errPrefix: 'Ошибка: ',
+
+  },
+  en: {
+    heroBadge: '10+ YEARS IN U.S. AUTO BUSINESS · AI-POWERED',
+    heroTitle: 'Don\'t sign that dealer contract<br>until I <em>check</em> the numbers',
+    heroSub: 'Got a price from a dealer? I\'m Vlad, 10 years in the U.S. auto business. Send me the email, screenshot, or photo — first check is free. With AI, in 2 minutes I\'ll find the hidden markups and tell you exactly where to push when you negotiate.',
+    t1:'years in the industry', t2:'deals analyzed', t3:'to analyze your deal', t4:'bilingual',
+    t3num: '2 min',
+    modeSingle: 'Analyze deal',
+    modeCompare: 'Compare 2 deals',
+    payTitle: '💳 Unlock analysis — $20',
+    payNote: 'One-time payment · Instant access · No subscriptions',
+    unlockBanner: '✓ Access unlocked — upload your deal',
+    types: { lease:'Lease', finance:'Finance', cash:'Cash', contract:'Contract' },
+    uploadTitle: 'Got a quote from the dealer?',
+    uploadSub: 'Upload a file or type the numbers below',
+    orText: 'or type numbers manually',
+    ph: {
+      lease: 'Payment $850/mo, due at signing $3,500, MSRP $72,000, selling price, money factor, term, miles...',
+      finance: 'Selling price, APR, loan term, monthly payment, down payment, trade-in...',
+      cash: 'Asking price, out-the-door price, dealer fees, add-ons...',
+      contract: 'Financed amount, APR, term, monthly payment, all finance office products...'
+    },
+    analyzeBtn: 'Analyze my deal →',
+    analyzing: 'Analyzing...',
+    processing: 'Processing image...',
+    ready: '✓ Ready to analyze',
+    lockedText: 'Pay $20 above to upload your deal and get full AI analysis',
+    good: '✓ DEAL LOOKS REASONABLE',
+    warn: '⚠ SOME CONCERNS FOUND',
+    danger: '🚩 RED FLAGS DETECTED',
+    noInput: 'Please upload a photo or enter deal numbers.',
+    ctaText: 'Need a personal deal review?',
+    ctaSub: 'Book a consultation with Vlad',
+    ctaBtn: 'Book now →',
+    errPrefix: 'Error: ',
+
+  }
+};
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-ru').classList.toggle('active', l==='ru');
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  const t = T[l];
+  document.getElementById('hero-badge').textContent = t.heroBadge;
+  document.getElementById('hero-title').innerHTML  = t.heroTitle;
+  document.getElementById('hero-sub').textContent  = t.heroSub;
+  document.getElementById('t1').textContent = t.t1;
+  document.getElementById('t2').textContent = t.t2;
+  document.getElementById('t3').textContent = t.t3;
+  document.getElementById('t4').textContent = t.t4;
+  // "2 мин" / "2 min" — the only language-dependent number in the trust strip.
+  const t3num = document.getElementById('t3-num');
+  if (t3num) t3num.textContent = t.t3num;
+  // Mode toggle buttons (single deal vs compare 2 deals).
+  const singleLbl  = document.getElementById('mode-single-label');
+  const compareLbl = document.getElementById('mode-compare-label');
+  if (singleLbl)  singleLbl.textContent  = t.modeSingle;
+  if (compareLbl) compareLbl.textContent = t.modeCompare;
+  document.getElementById('pay-title').textContent = t.payTitle;
+  document.getElementById('pay-note').textContent = t.payNote;
+  document.getElementById('unlock-banner').textContent = t.unlockBanner;
+  ['lease','finance','cash','contract'].forEach(tp => {
+    document.getElementById('tl-'+tp).textContent = t.types[tp];
+  });
+  document.getElementById('upload-title').textContent = t.uploadTitle;
+  document.getElementById('upload-sub').textContent = t.uploadSub;
+  document.getElementById('or-text').textContent = t.orText;
+  document.getElementById('deal-input').placeholder = t.ph[dealType];
+  document.getElementById('analyze-btn').textContent = t.analyzeBtn;
+  document.getElementById('locked-text').textContent = t.lockedText;
+
+  document.getElementById('result-area').innerHTML = '';
+}
+
+function setType(tp) {
+  dealType = tp;
+  ['lease','finance','cash','contract'].forEach(x => {
+    document.getElementById('type-'+x).classList.toggle('active', x===tp);
+  });
+  document.getElementById('deal-input').placeholder = T[lang].ph[tp];
+}
+
+function simulateUnlock() {
+  // Demo: allow first free analysis
+  showAnalyzer();
+}
+
+function showAnalyzer(opts) {
+  document.getElementById('payment-section').style.display = 'none';
+  document.getElementById('unlock-banner').style.display = 'block';
+  document.getElementById('deal-types-section').style.display = 'grid';
+  document.getElementById('upload-section').style.display = 'block';
+  document.getElementById('locked-overlay').style.display = 'none';
+  updateCounter();
+  // Skip the scroll when we're restoring a paid analysis — otherwise we'd
+  // scroll AWAY from the freshly-rendered full report.
+  if (!opts || !opts.skipScroll) {
+    window.scrollTo({ top: document.getElementById('unlock-banner').offsetTop - 80, behavior: 'smooth' });
+  }
+}
+
+function updateCounter() {
+  const remaining = getRemainingAnalyses();
+  const banner = document.getElementById('unlock-banner');
+  if (paidAnalyses > 0) {
+    banner.textContent = '✓ ' + (lang === 'ru' ? `Доступ открыт — осталось анализов: ${remaining}` : `Access unlocked — analyses remaining: ${remaining}`);
+  } else {
+    banner.textContent = '✓ ' + (lang === 'ru' ? 'Бесплатный анализ — загрузите вашу сделку' : 'Free analysis — upload your deal');
+  }
+}
+
+
+
+function handleDrag(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
+function handleDragLeave(e) { document.getElementById('upload-zone').classList.remove('dragover'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) processFile(f);
+}
+function handleFile(e) { const f = e.target.files[0]; if (f) processFile(f); }
+
+function removeFile() {
+  processedBase64 = null; isPdf = false;
+  extraImages = [];
+  document.getElementById('preview-area').style.display = 'none';
+  document.getElementById('preview-area').innerHTML = '';
+  document.getElementById('file-input').value = '';
+  const ep = document.getElementById('extra-pages-container');
+  if (ep) ep.innerHTML = '';
+}
+
+// Detect HEIC/HEIF by mime OR filename — Safari labels them image/heic
+// but Chrome/iOS sometimes leaves type empty and only the extension tells us.
+function isHeicFile(file) {
+  if (!file) return false;
+  const t = (file.type || '').toLowerCase();
+  if (t === 'image/heic' || t === 'image/heif') return true;
+  const n = (file.name || '').toLowerCase();
+  return n.endsWith('.heic') || n.endsWith('.heif');
+}
+
+// Convert HEIC → JPEG Blob so the rest of the pipeline (canvas, AI upload) just works.
+async function heicToJpeg(file) {
+  const HeicTo = await window.ensureHeicConverter();
+  // heic-to API: HeicTo({ blob, type, quality }) → JPEG Blob.
+  const blob = await HeicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
+  // Returns a single Blob; coerce defensively in case a build hands back an array.
+  return Array.isArray(blob) ? blob[0] : blob;
+}
+
+// Draw an already-decodable image Blob/File onto the canvas and return JPEG base64.
+// Rejects if the browser can't decode it (img.onerror) or produces a 0×0 image.
+function drawToJpegBase64(blob, maxW, maxH, quality) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      if (!w || !h) { reject(new Error('zero-dimension')); return; }
+      if (w > maxW || h > maxH) {
+        const r = Math.min(maxW/w, maxH/h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      const canvas = document.getElementById('compress-canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      try { resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]); }
+      catch (e) { reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode-failed')); };
+    img.src = url;
+  });
+}
+
+async function compressImage(file, maxW, maxH, quality) {
+  // 1) Try a NATIVE decode first. Safari/iOS decode HEIC directly in <img>/canvas,
+  //    so iPhone users (most of our traffic) never touch the heavier JS converter,
+  //    which bundles an old libheif that fails on modern "grid" iPhone HEIC.
+  try {
+    return await drawToJpegBase64(file, maxW, maxH, quality);
+  } catch (nativeErr) {
+    // 2) Native decode failed. On Chrome/Firefox this is expected for HEIC — convert
+    //    with heic-to (modern libheif), then retry the canvas draw on the JPEG.
+    if (isHeicFile(file)) {
+      let converted;
+      try {
+        converted = await heicToJpeg(file);
+      } catch (convErr) {
+        console.warn('[heic] conversion failed:', convErr && convErr.message);
+        throw new Error('HEIC conversion failed: ' + (convErr && convErr.message));
+      }
+      return await drawToJpegBase64(converted, maxW, maxH, quality);
+    }
+    // Not HEIC and still couldn't decode → genuinely unreadable (corrupt/unsupported).
+    console.warn('[img] native decode failed:', nativeErr && nativeErr.message);
+    throw nativeErr;
+  }
+}
+
+async function processFile(file) {
+  const name = file.name || 'file';
+  isPdf = file.type === 'application/pdf';
+  const preview = document.getElementById('preview-area');
+  preview.style.display = 'block';
+  preview.innerHTML = `<div class="file-card"><span>⏳ ${T[lang].processing}</span></div>`;
+
+  if (isPdf) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      processedBase64 = e.target.result.split(',')[1];
+      processedMime = 'application/pdf';
+      preview.innerHTML = `<div class="file-card"><span>📄 ${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  try {
+    processedBase64 = await compressImage(file, 1800, 1800, 0.85);
+    processedMime = 'image/jpeg';
+    const src = 'data:image/jpeg;base64,' + processedBase64;
+    preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal document"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFile()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
+  } catch(err) {
+    // Real failure (corrupt file, HEIC converter load/decode failed, etc.) — surface a clear
+    // error instead of silently lying about mime type to Anthropic.
+    console.error('[processFile] image processing failed:', err && err.message, err);
+    processedBase64 = null;
+    const ru = lang === 'ru';
+    preview.innerHTML = `<div class="error-msg">${ru
+      ? `Не удалось обработать «${name}». Попробуйте загрузить JPEG или PDF.`
+      : `Could not process "${name}". Try uploading a JPEG or PDF instead.`}</div>`;
+    document.getElementById('file-input').value = '';
+  }
+  // Show "add another page" button if not in compare mode and fewer than 2 extra pages loaded
+  if (!compareMode) renderExtraPageSlots();
+}
+
+function renderExtraPageSlots() {
+  const container = document.getElementById('extra-pages-container');
+  if (!container) return;
+  container.innerHTML = '';
+  extraImages.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px;font-size:13px;color:var(--text-muted)';
+    div.innerHTML = `<span>📄 ${lang==='ru'?'Страница':'Page'} ${i+2}</span><button class="remove-btn" onclick="removeExtraPage(${i})" style="margin-left:auto">✕</button>`;
+    container.appendChild(div);
+  });
+  if (extraImages.length < 2) {
+    const btn = document.createElement('button');
+    btn.className = 'pay-btn';
+    btn.style.cssText = 'width:100%;justify-content:center;margin-bottom:8px;font-size:13px';
+    btn.innerHTML = `➕ ${lang==='ru'?'Добавить страницу документа':'Add another page'}`;
+    btn.onclick = () => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'image/*,.heic,.heif,application/pdf';
+      inp.onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        try {
+          const isP = f.type === 'application/pdf';
+          if (isP) {
+            const data = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(f); });
+            extraImages.push({ data, mime: 'application/pdf', isPdf: true });
+          } else {
+            const data = await compressImage(f, 1800, 1800, 0.85);
+            extraImages.push({ data, mime: 'image/jpeg', isPdf: false });
+          }
+        } catch(err) {
+          console.error('[extra-page] processing failed:', err && err.message, err);
+          alert(lang==='ru'
+            ? 'Не удалось обработать эту страницу. Попробуйте JPEG или PDF.'
+            : 'Could not process that page. Try a JPEG or PDF.');
+        }
+        renderExtraPageSlots();
+      };
+      inp.click();
+    };
+    container.appendChild(btn);
+  }
+}
+
+function removeExtraPage(i) {
+  extraImages.splice(i, 1);
+  renderExtraPageSlots();
+}
+
+// ── Tier-section extraction (parses <BREAKDOWN> / <EXECUTION> tags) ──
+// The AI wraps the deep markdown analysis in <BREAKDOWN>…</BREAKDOWN> for LEAD+
+// users and the dealer message + negotiation script in <EXECUTION>…</EXECUTION>
+// for FULL users. The server strips disallowed sections before we see them, so
+// whatever made it here is what the user is allowed to see — we just need to
+// unwrap the tags for clean rendering.
+//
+// Returns { breakdown, execution, remainder }:
+//   breakdown   = markdown that goes in the locked deep-breakdown card (LEAD+)
+//   execution   = markdown for the dealer message + negotiation script (FULL only)
+//   remainder   = any markdown that fell outside both tagged sections — typically
+//                 empty, but if the model produced loose text we keep it visible
+//                 rather than silently drop it.
+function stripThinking(t) {
+  return t.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+}
+
+function splitTierSections(text) {
+  let breakdown = '';
+  let execution = '';
+  const remainder = String(text || '')
+    .replace(/<BREAKDOWN>([\s\S]*?)<\/BREAKDOWN>/gi, (_, m) => { breakdown += m + '\n'; return ''; })
+    .replace(/<EXECUTION>([\s\S]*?)<\/EXECUTION>/gi, (_, m) => { execution += m + '\n'; return ''; })
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return { breakdown: breakdown.trim(), execution: execution.trim(), remainder };
+}
+
+// ── Diagnosis extraction (parses the JSON header the AI emits) ──
+// Returns { diagnosis, body } — diagnosis is the parsed JSON (or null on failure),
+// body is the markdown analysis with the JSON block stripped out.
+function extractDiagnosis(text) {
+  const m = text.match(/<DIAGNOSIS_JSON>\s*([\s\S]*?)\s*<\/DIAGNOSIS_JSON>/);
+  if (!m) return { diagnosis: null, body: text };
+  try {
+    const diagnosis = JSON.parse(m[1]);
+    const body = text.replace(m[0], '').trim();
+    return { diagnosis, body };
+  } catch (e) {
+    // Malformed JSON: log but never fail the whole flow — fall back to markdown only.
+    // Keep the original text intact (don't strip the broken block) so we don't accidentally
+    // delete content the user paid to see.
+    console.warn('[diagnosis] JSON parse failed, keeping body intact:', e);
+    return { diagnosis: null, body: text };
+  }
+}
+
+function escapeHtmlText(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+}
+
+// Free-tier diagnosis card: shows category + label + $ per issue, plus a summary line.
+function renderDiagnosisCard(diag) {
+  const ru = lang === 'ru';
+  // Null diagnosis = JSON header missing/malformed. Be cautious: do NOT claim the deal
+  // is clean since the markdown body might still contain real red flags.
+  if (!diag) {
+    // No diagnosis JSON came back. Don't promise red flags we can't show —
+    // just nudge the user toward the inline lead-capture form below.
+    return '<div class="diagnosis-card"><div class="diagnosis-summary" style="color:var(--text-muted);font-weight:500">'
+      + (ru ? '📋 Анализ готов — оставь email ниже, чтобы открыть полный разбор.'
+            : '📋 Analysis ready — drop your email below to see the full breakdown.')
+      + '</div></div>';
+  }
+  // Only show the celebratory "clean deal" message if the verdict actually agrees.
+  // If verdict='danger' or 'warn' but issues=[], something is off — show a neutral state
+  // instead of a misleading green check next to a red verdict badge.
+  if (!Array.isArray(diag.issues) || diag.issues.length === 0) {
+    if (diag.verdict === 'good') {
+      return '<div class="diagnosis-card"><div class="diagnosis-clean">'
+        + (ru ? '✅ Сделка выглядит чисто — серьёзных проблем не обнаружено.'
+              : '✅ Deal looks clean — no serious issues found.')
+        + '</div></div>';
+    }
+    // Verdict isn't 'good' but the model didn't surface specific issues.
+    // Same approach as the null-diagnosis case: invite them to register so the
+    // LEAD-tier re-analyze can surface the deeper per-fee analysis.
+    return '<div class="diagnosis-card"><div class="diagnosis-summary" style="color:var(--text-muted);font-weight:500">'
+      + (ru ? '📋 Анализ готов — оставь email ниже, чтобы увидеть подробный разбор каждой комиссии.'
+            : '📋 Analysis ready — drop your email below to see the deep breakdown of every fee.')
+      + '</div></div>';
+  }
+  const sevIcon = { critical: '🔴', moderate: '🟡', minor: '🟢' };
+  // Coerce numeric fields defensively — the AI sometimes emits "500" (string) instead of 500
+  const toNum = (v) => {
+    const n = typeof v === 'number' ? v : parseInt(String(v).replace(/[^\d-]/g, ''), 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const fmtMoney = (n) => '~$' + n.toLocaleString();
+  const issuesHtml = diag.issues.map((i) => {
+    const amount = toNum(i && i.dollarAmount);
+    const label  = (i && i.label) ? String(i.label) : '';
+    if (!label) return ''; // skip empty/malformed issues entirely
+    return `
+    <div class="diag-issue">
+      <div class="diag-issue-head">
+        <span class="diag-icon">${sevIcon[i.severity] || '⚠️'}</span>
+        ${i.category ? '<span class="diag-category">' + escapeHtmlText(i.category) + '</span>' : ''}
+        ${amount > 0 ? '<span class="diag-amount">' + fmtMoney(amount) + '</span>' : ''}
+      </div>
+      <div class="diag-label">${escapeHtmlText(label)}</div>
+    </div>`;
+  }).join('');
+  const totalOverpay = toNum(diag.totalOverpay);
+  const totalLine = totalOverpay > 0
+    ? ' <span class="muted">·</span> ' + fmtMoney(totalOverpay) + ' '
+      + (ru ? 'возможной переплаты' : 'in potential overpayment')
+    : '';
+  return `<div class="diagnosis-card">
+    <div class="diagnosis-summary">
+      ${diag.issues.length} ${ru ? (diag.issues.length === 1 ? 'проблема найдена' : 'проблем(ы) найдено') : (diag.issues.length === 1 ? 'issue found' : 'issues found')}${totalLine}
+    </div>
+    <div class="diagnosis-issues">${issuesHtml}</div>
+  </div>`;
+}
+
+// Legacy two-tier paywall ($9 Full Breakdown / $49 + Call with me). Neutralized
+// in the three-tier funnel: the breakdown is now free for any captured lead,
+// and the "$49 call" tier has been folded into the LEAD-tier brokerage CTA
+// (which offers a free Calendly booking instead of a paid Stripe checkout).
+// Kept as a guaranteed-empty function so any stale call-site can't surface
+// $9 / $49 cards on the page.
+function renderPaywallCard() { return ''; }
+
+// ── Tier-specific call-to-action cards ────────────────────────────────────
+// FREE tier exit: an INLINE capture form, not an external link. We deliberately
+// don't push to Stan here — the lead would just copy the visible URL and skip
+// the email gate. By doing the capture in-page and posting to our own /api/
+// collect-email, then re-running the analysis at LEAD tier in place, the user
+// physically cannot see the deeper content until they submit. Server-side
+// gating in /api/analyze enforces this on the wire too.
+
+function renderFreeTierCTA() {
+  const ru = lang === 'ru';
+  return `<div class="paywall-card" id="free-cta-card">
+    <div class="paywall-head">
+      🔒 ${ru ? 'Открой полный разбор — бесплатно' : 'Unlock the full breakdown — free'}
+    </div>
+    <div class="paywall-sub">
+      ${ru
+        ? 'Это была быстрая проверка — красные флаги и общая сумма переплаты. Оставь имя и email — за 5 секунд открою разбор каждой комиссии и что с этим делать.'
+        : "That was the quick check — red flags and the total overcharge headline. Drop your name + email and in 5 seconds I'll show you a deep breakdown of every fee and what to do about it."}
+    </div>
+    <form id="inline-lead-form" onsubmit="event.preventDefault();unlockLeadInline();" style="padding:0 1.25rem 1.25rem;display:flex;flex-direction:column;gap:8px">
+      <input id="lead-firstname" type="text" placeholder="${ru ? 'Имя' : 'First name'}"
+        style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none" required>
+      <input id="lead-email" type="email" placeholder="${ru ? 'Email' : 'Email'}"
+        style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none" required>
+      <input id="lead-phone" type="tel" placeholder="${ru ? 'Телефон (необязательно)' : 'Phone (optional)'}"
+        style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none">
+      <button type="submit" id="lead-submit-btn" class="paywall-tier paywall-tier-premium" style="border:none;cursor:pointer;text-align:center;padding:14px 24px">
+        <span class="tier-badge">${ru ? 'Бесплатно · мгновенно' : 'Free · instant'}</span>
+        <div class="tier-title">${ru ? '👉 Открыть полный разбор' : '👉 Unlock the full breakdown'}</div>
+      </button>
+      <div id="lead-form-error" style="color:var(--red);font-size:13px;display:none"></div>
+      <div style="color:var(--text-muted);font-size:11px;text-align:center;margin-top:4px">
+        ${ru ? 'Влад никогда не спамит. Без рассылок.' : "Vlad never spams. No marketing lists."}
+      </div>
+    </form>
+  </div>`;
+}
+
+// FREE-tier inline capture handler. On submit:
+//   1. Validate the form (firstName + email required; phone optional but
+//      strongly preferred for brokerage follow-up).
+//   2. POST the lead to /api/collect-email — same endpoint the original modal
+//      used. That saves to Redis, fires the admin notification to Vlad, and
+//      sends the welcome email via Brevo.
+//   3. Upgrade the local tier (sessionStorage + the legacy capturedLead_v2
+//      flag so refreshes don't re-show the form).
+//   4. Re-send the previously-stashed analysis request with accessTier='lead'.
+//      The server now emits <BREAKDOWN> content that the user just earned.
+//   5. Re-render the result card with the new tier's full layout.
+async function unlockLeadInline() {
+  const ru = lang === 'ru';
+  const fn = (document.getElementById('lead-firstname')?.value || '').trim();
+  const em = (document.getElementById('lead-email')?.value || '').trim();
+  const ph = (document.getElementById('lead-phone')?.value || '').trim();
+  const errEl = document.getElementById('lead-form-error');
+  const btn = document.getElementById('lead-submit-btn');
+  const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
+
+  if (!fn)                                  return showErr(ru ? 'Введи имя'           : 'Enter your first name');
+  if (!em || !em.includes('@'))             return showErr(ru ? 'Введи корректный email' : 'Enter a valid email');
+
+  // Optimistically lock the button so a double-click doesn't double-submit.
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; }
+  if (errEl) errEl.style.display = 'none';
+
+  // Save the lead in our own DB. Mirror the field set the original modal sent
+  // so the admin notification email and welcome email render correctly.
+  const dealText = (document.getElementById('deal-input')?.value || '').trim();
+  const hasAttachment = !!(typeof processedBase64 !== 'undefined' && processedBase64);
+  const image = hasAttachment
+    ? { data: processedBase64, mime: (typeof processedMime !== 'undefined' && processedMime) || 'image/jpeg' }
+    : null;
+  const extras = (typeof extraImages !== 'undefined' && Array.isArray(extraImages))
+    ? extraImages.map((x) => ({ data: x.data, mime: x.mime || (x.isPdf ? 'application/pdf' : 'image/jpeg') }))
+    : [];
+
+  try {
+    await fetch('/api/collect-email', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        firstName: fn,
+        lastName:  '',           // inline form drops the last-name field — friction reduction
+        email:     em,
+        phone:     ph || null,
+        ref:       new URLSearchParams(window.location.search).get('ref') || null,
+        dealText:  dealText || null,
+        dealType:  typeof dealType !== 'undefined' ? dealType : null,
+        hasAttachment,
+        lang:      typeof lang !== 'undefined' ? lang : null,
+        image,
+        extras
+      })
+    });
+  } catch (e) {
+    // Saving the lead failed (network blip, Redis down, etc). We still want to
+    // give them the breakdown — they did submit — but log it so we can find
+    // dropped leads later. Vlad's manual follow-up is the recovery here.
+    console.warn('[lead-capture] save failed (continuing to unlock)', e && e.message);
+  }
+
+  // Mark them as a captured lead — survives refresh/return visits, so they
+  // don't get re-prompted for their info next time.
+  localStorage.setItem('capturedLead_v2', '1');
+  localStorage.setItem('capturedEmail', em);
+  localStorage.setItem('capturedFirstName', fn);
+  if (ph) localStorage.setItem('capturedPhone', ph);
+  setTier('lead');
+
+  // Re-run the analysis at LEAD tier so the server emits the deep breakdown.
+  // We reuse the exact request body the FREE analysis used; only the tier
+  // changes, so we don't pay an extra extraction call.
+  const reqBody = window.lastAnalysisRequest;
+  if (!reqBody) {
+    // Edge case: form submitted before any analysis happened (shouldn't be
+    // reachable because the form only shows inside the FREE result card).
+    // Best-effort fallback: just reload with the lead flag set.
+    window.location.search = (window.location.search ? window.location.search + '&' : '?') + 'unlocked=lead';
+    return;
+  }
+  reqBody.accessTier = 'lead';
+
+  // Swap the form for a spinner so the user sees something happening — the
+  // re-analyze typically takes 5–15 seconds.
+  const cardEl = document.getElementById('free-cta-card');
+  if (cardEl) cardEl.innerHTML = `
+    <div class="paywall-head">${ru ? '🔓 Открываю полный разбор…' : '🔓 Unlocking your full breakdown…'}</div>
+    <div class="paywall-sub" style="padding-bottom:1.25rem">
+      ${ru ? 'Подожди 5–10 секунд — AI готовит подробный разбор по твоей сделке.' : 'Give it 5–10 seconds — AI is preparing the deep breakdown for your deal.'}
+    </div>`;
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify(reqBody)
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || 'Re-analyze failed');
+    const text = stripThinking(data.content?.map(b => b.text || '').join('') || '');
+    if (!text) throw new Error('Empty response');
+
+    // Replace the persisted body so subsequent renders / PDF / email use the
+    // upgraded content, not the diagnosis-only FREE body.
+    const { diagnosis, body } = extractDiagnosis(text);
+    window.lastAnalysisText = body;
+    window.lastDiagnosis    = diagnosis;
+    try {
+      sessionStorage.setItem('lastAnalysisBody', body);
+      sessionStorage.setItem('lastDiagnosis', diagnosis ? JSON.stringify(diagnosis) : '');
+    } catch (_) {}
+
+    // Re-render the whole result card at LEAD tier. The cleanest way to do
+    // this is to reuse renderUnlockedAnalysis — it knows how to split the
+    // body into breakdown + execution, and at LEAD tier the execution
+    // section will be absent (server stripped it), so the render naturally
+    // omits the execution block and shows the brokerage CTA below.
+    renderUnlockedAnalysis(body, diagnosis);
+
+    // Slot in the LEAD brokerage CTA below the breakdown — renderUnlockedAnalysis
+    // was originally built for FULL tier and doesn't include it.
+    const resultArea = document.getElementById('result-area');
+    if (resultArea && getTier() === 'lead') {
+      const ctaWrap = document.createElement('div');
+      ctaWrap.innerHTML = renderLeadTierCTA();
+      const card = resultArea.querySelector('.result-card');
+      if (card) card.appendChild(ctaWrap.firstElementChild);
+      else      resultArea.appendChild(ctaWrap.firstElementChild);
+    }
+  } catch (e) {
+    console.error('[lead-unlock] re-analyze failed', e.message);
+    if (cardEl) cardEl.innerHTML = `
+      <div class="paywall-head" style="color:var(--red)">${ru ? '⚠️ Не получилось открыть разбор' : "⚠️ Couldn't unlock the breakdown"}</div>
+      <div class="paywall-sub" style="padding-bottom:1.25rem">
+        ${ru
+          ? 'Твои данные сохранились — напиши Владу в Instagram @pereprodavec_vlad или позвони (949) 870-7365, он откроет разбор лично.'
+          : 'Your info is saved — DM Vlad on Instagram @pereprodavec_vlad or call (949) 870-7365 to get the breakdown personally.'}
+      </div>`;
+  }
+}
+
+// LEAD tier exit: this is the conversion engine. The user has already shown
+// real interest (registered, completed an analysis, now seeing the deep
+// breakdown). The CTA pitches the free brokerage — dealer pays Vlad, buyer
+// pays $0 — which is the actual product the business sells. The execution
+// package (ready-to-send dealer message + negotiation script) is deliberately
+// withheld so this CTA isn't competing against a self-serve path.
+function renderLeadTierCTA() {
+  const ru = lang === 'ru';
+  return `<div class="paywall-card" id="lead-cta-card" style="border-color:var(--accent)">
+    <div class="paywall-head" style="color:var(--accent)">
+      🤝 ${ru ? 'Давай я займусь этим за тебя — бесплатно' : "Let me handle this for you — free"}
+    </div>
+    <div class="paywall-sub">
+      ${ru
+        ? 'Это сложно, и дилер делает это каждый день. 10+ лет внутри Mercedes научили меня, на что давить. Я лично проведу твою сделку: позвоню дилеру, выбью лучший money factor, проверю каждую цифру до подписания. Тебе это БЕСПЛАТНО — мне платит дилер.'
+        : "This is complex, and the dealer does it daily. 10+ years inside Mercedes taught me exactly what to push on. I'll personally handle your deal: call the dealer, negotiate the money factor, verify every line of the contract before you sign. FREE to you — the dealer pays me."}
+    </div>
+    <div style="display:flex;gap:8px;padding:0 1.25rem 0.75rem;flex-wrap:wrap">
+      <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#E1306C;color:#fff;border-color:#E1306C">
+        📱 ${ru ? 'Написать в Instagram' : 'DM on Instagram'}
+      </a>
+      <a href="tel:+19498707365" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#25D366;color:#fff;border-color:#25D366">
+        📞 (949) 870-7365
+      </a>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:0 1.25rem;padding:1rem 0;text-align:center;font-size:13px;color:var(--text-muted)">
+      ${ru ? 'или забронируй личную 15-минутную консультацию:' : 'or book a personal 15-minute consultation:'}
+      <a href="https://buy.stripe.com/bJe3cu7V2cYSgs2bjAbbG02" target="_blank"
+        style="display:inline-block;margin-top:8px;padding:10px 18px;background:var(--accent);color:#000;font-weight:700;text-decoration:none;border-radius:8px;font-family:Syne,sans-serif">
+        📅 ${ru ? 'Консультация — $49' : 'Consultation — $49'}
+      </a>
+      <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
+        ${ru ? '15 минут 1-на-1 со мной · через Calendly после оплаты' : '15 min 1-on-1 with me · Calendly link after payment'}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderMarkdown(text) {
+  let s = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s = s.replace(/^### (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin:1.2rem 0 0.4rem">$1</div>');
+  s = s.replace(/^## (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1.1rem;font-weight:700;color:var(--accent);margin:1.5rem 0 0.5rem">$1</div>');
+  s = s.replace(/^# (.+)$/gm, '<div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);margin:1rem 0 0.5rem">$1</div>');
+  s = s.replace(/[*][*]([^*]+)[*][*]/g, '<strong style="color:var(--text)">$1</strong>');
+  s = s.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:0.75rem 0">');
+  s = s.replace(/^- (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--accent)">&bull;</span><span>$1</span></div>');
+  s = s.replace(new RegExp("\n\n", "g"), "<br><br>");
+  s = s.replace(new RegExp("\n", "g"), "<br>");
+  return s;
+}
+
+function buildSystem() {
+  const dealTypeLabel = {
+    lease: lang==='ru' ? 'лизинг' : 'lease',
+    finance: lang==='ru' ? 'кредит/финансирование' : 'finance/loan',
+    cash: lang==='ru' ? 'покупка за наличные' : 'cash purchase',
+    contract: lang==='ru' ? 'финальный контракт' : 'signed contract'
+  }[dealType] || dealType;
+
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate() - dayOfMonth;
+  const month = now.getMonth(); // 0-indexed
+  const isEndOfMonth = daysLeftInMonth <= 5;
+  const isEndOfQuarter = (month === 2 || month === 5 || month === 8 || month === 11) && daysLeftInMonth <= 10;
+  const timingNote = isEndOfQuarter
+    ? `TODAY IS END OF QUARTER (${daysLeftInMonth} days left). Dealers MUST hit quarterly targets. Maximum buyer leverage — push hard.`
+    : isEndOfMonth
+    ? `TODAY IS END OF MONTH (${daysLeftInMonth} days left). Dealers need units to hit monthly quota. Good leverage window — use it.`
+    : `Today is the ${dayOfMonth}th. End of month is in ${daysLeftInMonth} days. End of month and end of quarter are the best times to negotiate.`;
+
+  return `You are Vlad — a brutally honest car deal expert with 10+ years inside Mercedes-Benz dealerships in Southern California. You analyze deals exclusively for the BUYER.
+
+RESPOND IN: ${lang === 'ru' ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
+
+MARKET TIMING: ${timingNote} Always mention this in the negotiation section.
+
+═══════════════════════════════════════
+STEP 1 — ALWAYS START HERE: CONFIRM NUMBERS
+═══════════════════════════════════════
+Before ANY analysis, list every key number you extracted from the document under this header:
+
+## 📋 ЦИФРЫ ИЗ ДОКУМЕНТА / NUMBERS I READ
+List: Selling Price, MSRP (if shown), Trade-in allowance, Trade payoff, Doc fee, Taxes, Total due, Monthly payment (if lease), Money Factor (if lease), Residual (if lease), Term, any other key figures.
+
+Then write: "Пожалуйста подтвердите эти цифры перед тем как читать анализ." / "Please confirm these numbers before reading the analysis."
+
+WHY THIS IS CRITICAL: Documents are often photographed at an angle or are blurry. The most common OCR errors: 0 misread as 8, 7 misread as 1, 3 misread as 8. SELLING PRICE is the most important number — if it seems too high for the vehicle, flag it immediately: "Цена $X выглядит высокой для этой модели — подтвердите пожалуйста." If your math doesn't add up to the shown total, YOU misread a number, not the dealer.
+
+═══════════════════════════════════════
+STEP 2 — IDENTIFY LOCATION & DEAL TYPE
+═══════════════════════════════════════
+DEALER LOCATION: Find the dealer's full address on the document. Extract:
+1. CITY (e.g., "Torrance", "Houston", "Chicago")
+2. COUNTY (e.g., "Los Angeles County", "Harris County", "Cook County") — infer from city if not stated
+3. STATE (e.g., "CA", "TX", "IL")
+
+⚠️ CRITICAL STATE/COUNTY RULE: Apply ONLY the rules for the exact jurisdiction shown. If the dealer is in Illinois — use Illinois rules. If Texas — use Texas rules. NEVER default to California rules unless the dealer address explicitly shows CA. Wrong state rules destroy user trust.
+
+SALES TAX BY COUNTY (this is where buyers most often get misled — the combined rate varies by city/county):
+- California: State base 7.25%. Counties and cities add on top.
+  - Los Angeles County: combined rate 10.25% (most cities); Santa Monica 10.25%; Long Beach 10.25%
+  - Orange County: 7.75% (most cities); Anaheim 7.75%; Irvine 7.75%; Newport Beach 7.75%
+  - San Diego County: 7.75% (most cities); Chula Vista 8.75%
+  - Riverside County: 8.75%; San Bernardino County: 7.75%
+  - San Jose / Santa Clara County: 9.375%; San Francisco: 8.625%
+  - If stated county/city is not listed here: flag if the tax rate shown does not match state base + known local add-ons
+- Texas: State 6.25% + local up to 2% = max 8.25%. Most Dallas/Houston/Austin areas = 8.25%.
+- Florida: State 6% + county surtax (0–1.5%). Miami-Dade = 7%; Broward = 7%; Palm Beach = 7%; Orange (Orlando) = 6.5%
+- Illinois: State 6.25% + Chicago city/county add-ons. Chicago = ~10.25%; suburban Cook County = 9.25%–10.25%
+- Nevada: 6.85% state + county. Clark County (Las Vegas) = 8.375%
+- Washington: 6.5% state + local. King County (Seattle area) = 10.2%–10.5%
+- Other states: If the tax rate shown on the document seems unusually high or low for the stated city, flag it as YELLOW and note the expected range.
+
+⚠️ TAX FLAG RULE: If the tax amount in the document does not match (purchase price × expected rate for that county), flag YELLOW: "Tax shown ($X) appears [high/low] for [city, state] — confirm with dealer."
+
+BUYER STATE: Read buyer's address if shown. Note if buyer is from a different state than dealer (can affect registration).
+DEAL TYPE: Determine from the numbers — do NOT rely on user's selection.
+- Lease: has money factor + residual + monthly payment
+- Finance: has APR + loan term + monthly payment
+- Cash: lump sum purchase, no financing
+
+DOC FEE BY STATE (apply only the dealer's state):
+- California: max $85 by law. Above $85 = red flag
+- Illinois: not regulated, $150-500 is normal, above $600 = worth questioning
+- Texas: not regulated, $100-300 typical, above $500 = question it
+- Florida: not regulated, up to $1,000 seen
+- Other states: research the norm for that state, do not assume California rules
+
+MARKET DETECTION — determine BEFORE applying any rules:
+- US MARKET DEAL: Prices in USD ($), dealer address in a US state, lender is a US bank or captive (Chase, US Bank, NMAC, BMWFS, MBFS, etc.)
+- RUSSIAN MARKET DEAL (РФ): Prices in rubles (₽ / RUB / руб), dealer address in Russia, lender is a Russian bank (Сбербанк, ВТБ, Альфа-Банк, Тинькофф, Газпромбанк, Русфинанс, Сетелем, etc.)
+
+When the document is a RUSSIAN MARKET DEAL — replace US-market rules with these:
+
+RUSSIAN MARKET RULES (apply ONLY for ₽-denominated deals):
+- КРЕДИТНАЯ СТАВКА: CBR key rate as of mid-2026 is ~16%. Flag RED if auto loan APR > CBR + 6% (i.e., > ~22%). Flag YELLOW if > CBR + 3%.
+- КАСКО: Buyer has legal right to choose any licensed insurer (FZ-353). If dealer requires КАСКО only through their partner insurer — flag RED. Script: "Я воспользуюсь правом самостоятельно выбрать страховщика согласно ФЗ №353. Предоставлю полис до получения автомобиля."
+- ОСАГО: Government-regulated rate. If dealer price is inflated vs. direct insurer rates — flag YELLOW.
+- СТРАХОВАНИЕ ЖИЗНИ / ЗДОРОВЬЯ: Optional by FZ «О защите прав потребителей» Art.16. If framed as mandatory — flag RED. Script: "По ст.16 ФЗ «О защите прав потребителей» навязывание доп. услуг при кредитовании запрещено. Прошу убрать страхование из условий."
+- ДОПОЛНИТЕЛЬНОЕ ОБОРУДОВАНИЕ: Pre-installed accessories (тонировка, сигнализация, защита кузова, антикор) are optional. If priced into deal without buyer consent — flag RED. Script: "Данное оборудование установлено без моего согласия. Прошу снизить цену на стоимость опций либо убрать их до передачи авто."
+- DEALER FEES: Any "комиссия за оформление" or "услуга дилера" over 20,000₽ without itemization — flag RED.
+- NEGATIVE EQUITY ROLLOVER: If trade payoff > trade value, difference rolls into loan — flag RED and show cost impact in rubles.
+- СРОК КРЕДИТА: Term > 60 months — flag YELLOW (high overpayment, fast depreciation creates underwater risk).
+- DOC FORMAT: Display all amounts in ₽ for Russian market deals.
+
+═══════════════════════════════════════
+STEP 3 — FULL ANALYSIS
+═══════════════════════════════════════
+
+## ВЕРДИКТ / VERDICT
+One honest sentence. Good deal = say so. Bad deal = say so.
+
+## РАЗБОР ЦИФР / NUMBER BREAKDOWN
+Go line by line through every number. Explain what each means in plain language.
+
+LEASE specifics:
+- Money Factor × 2400 = APR equivalent. Marked up from base?
+- Residual below 45% = fast depreciation
+- 39 month term = extra registration + maintenance year
+- Cap Cost Reduction = buyer's OWN money, not a discount. Risk if totaled. Recommend minimum drive-off (~$3,000-4,000)
+- Confirm payments include tax
+- Ask about all manufacturer incentives/rebates
+
+FINANCE specifics:
+- APR marked up from bank rate? Dealer profits from this.
+- 72-84 month term = danger, massive interest, underwater immediately
+- GAP insurance: $200-300 elsewhere vs $600-1,200 at dealer
+- Extended warranty: shop independently
+
+CASH specifics:
+- Accessories itemized? Generic "accessories" line = ask for breakdown
+- Recall status if shown
+- Out-the-door price = selling price + doc + registration + tax only
+
+TRADE-IN:
+- Positive equity: ask for check instead of applying to deal
+- Negative equity: gets rolled in, buyer pays interest on it
+- Always verify: trade allowance - payoff = equity (positive or negative)
+- Recommend getting independent KBB/CarMax quote before dealership
+
+## КРАСНЫЕ ФЛАГИ / RED FLAGS
+ONLY list confirmed real problems — things with actual dollar evidence in THIS document. No speculation.
+
+Rate each flag by severity and always include the exact dollar cost to the buyer:
+
+🔴 КРИТИЧНО / CRITICAL — costs buyer $500+ or is a legal/financial trap
+🟡 УМЕРЕННО / MODERATE — costs $100–500, worth fighting for
+🟢 НЕЗНАЧИТЕЛЬНО / MINOR — under $100, nice to fix but not deal-breaking
+
+Format EVERY red flag like this:
+[EMOJI] **[Name]** — [What it is in plain language] — 💸 Цена для покупателя: **$X** — Скажите дилеру: *"[exact word-for-word script in the response language]"*
+
+If no real red flags: say exactly "Серьёзных красных флагов не обнаружено. Сделка выглядит честно." Be direct — a clean deal is a clean deal. Do NOT invent problems.
+
+## ИТОГОВАЯ СТОИМОСТЬ / TOTAL COST REALITY CHECK
+Always include this section. Show the real money at stake:
+- If CASH: Total out-of-pocket = selling price + all fees + taxes
+- If FINANCE: Total paid over loan life = (monthly payment × term) + down payment. Then: "You pay $X total for a car that costs $Y — that's $Z in interest."
+- If LEASE: Total paid over lease = (monthly × term) + due at signing + disposition fee (~$400). Then: "After [term] months you own nothing. Monthly cost of use: $[payment+fees/term]/mo."
+- If trade-in: "Your trade equity of $X reduces your out-of-pocket to $Y"
+- Always end with: "The single most impactful thing you can do to improve this deal: [one specific action with dollar impact]"
+
+## ОЦЕНКА / SCORE
+Score: X/10 (be honest — 10 is unicorn deal, 5 is average, below 4 = problems)
+✅ Хорошо / Good: [list]
+🔧 Исправить до подписания / Fix before signing: [list with dollar savings for each]
+📌 Итог / Bottom line: Sign it / Negotiate first / Walk away
+
+═══════════════════════════════════════
+OUTPUT FORMAT — READ THIS BEFORE WRITING ANYTHING
+═══════════════════════════════════════
+Your response has TWO sections, in this order. The server will append an ACCESS TIER instruction below telling you WHICH of these to emit. Always emit the diagnosis JSON; emit the breakdown only when permitted.
+
+  1. <DIAGNOSIS_JSON>…</DIAGNOSIS_JSON>   — ALWAYS emit first, no preceding whitespace
+  2. <BREAKDOWN>…</BREAKDOWN>             — emit only if the tier allows (lead, full)
+
+The VERY FIRST bytes of your response MUST be the <DIAGNOSIS_JSON> block — no prose, no headers, no whitespace before it.
+
+After the closing </DIAGNOSIS_JSON> tag, IF the tier permits, write the full markdown analysis from STEPS 1–3 above WRAPPED IN <BREAKDOWN>…</BREAKDOWN> tags. The breakdown contains: NUMBERS / location / red flags / per-fee deep analysis / total cost reality check / score. **Do NOT produce any "Negotiation Scripts" section, any "ready-to-send dealer message", any "Готовое письмо дилеру", or any word-for-word scripts the buyer should send to the dealer.** This tool focuses ONLY on analyzing the deal and surfacing red flags. The brokerage path (Vlad personally taking the deal) is presented separately by the app; do NOT include it in the markdown.
+
+This JSON powers the free-tier preview. Format exactly:
+
+<DIAGNOSIS_JSON>
+{
+  "verdict": "good" | "warn" | "danger",
+  "score": <integer 1-10>,
+  "totalOverpay": <integer dollars, sum of all dollar amounts at stake; 0 if clean deal>,
+  "issues": [
+    {
+      "severity": "critical" | "moderate" | "minor",
+      "category": "<short category, ${lang === 'ru' ? 'на русском' : 'in English'}, e.g. 'Доп. услуга' / 'Add-on', 'Комиссия' / 'Fee', 'Цена' / 'Price', 'APR/Money Factor', 'Trade-in', 'Срок'>",
+      "label": "<short specific issue label, ${lang === 'ru' ? 'на русском' : 'in English'}, max 60 chars — must be SPECIFIC to THIS deal (e.g. 'Doc fee $699 — market ~$150', NOT 'Doc fee overpriced')>",
+      "dollarAmount": <integer dollars at stake for this issue; 0 if not quantifiable>
+    }
+    // 0–8 items. Only REAL issues with dollar evidence in THIS document. No filler.
+  ]
+}
+</DIAGNOSIS_JSON>
+
+CRITICAL RULES for the diagnosis JSON:
+- Issue labels MUST be specific to the user's actual numbers — never generic ("3 red flags found" is BAD, "Doc fee $699 vs market $150" is GOOD).
+- If the deal is clean, return issues: [] and totalOverpay: 0. Do NOT invent issues.
+- totalOverpay = sum of all dollarAmount values.
+- The JSON must be valid parseable JSON. No trailing commas. No comments.
+- Severity rules: critical = $500+ at stake, moderate = $100-500, minor = <$100.
+- The JSON block is REQUIRED — without it the free-tier view breaks.`;
+}
+
+function buildExtractionSystem() {
+  return `You are a document data extractor. Read this car deal document and list ALL key data.
+
+RESPOND IN: ${lang === 'ru' ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
+
+Extract and list every piece of data you see:
+- Vehicle: year, make, model, trim — copy LETTER BY LETTER exactly as printed on the document
+- Stock # / VIN
+- Dealer name, full address — extract CITY, COUNTY (infer from city if not stated), and STATE separately
+- Buyer address (if shown) — city and state
+- Selling Price / Sale Price
+- MSRP (if shown)
+- Trade-in: year, make, model, mileage, allowance, payoff
+- All fees individually (doc fee, registration, each tax line)
+- Financing: down payment, APR, term, monthly payment
+- Money Factor, Residual % (if lease)
+- If Russian market (prices in ₽): Ставка по кредиту (%), срок кредита, первоначальный взнос, КАСКО (страховщик + стоимость), ОСАГО (стоимость), страхование жизни/здоровья (стоимость + обязательность), дополнительное оборудование (каждый пункт и цена отдельно), комиссии банка/дилера
+- Any other dollar or ruble amounts or terms
+
+CRITICAL: Copy the vehicle model name EXACTLY as it appears — letter by letter. If document shows "TX" write "TX". If it shows "RX" write "RX". Never auto-correct or assume the model.
+
+Output a clean bulleted list only. No analysis, no opinions.`;
+}
+
+async function analyzeDeal() {
+  if (compareMode) { compareDeal(); return; }
+  // Re-entrancy guard — prevent double-submit from burning credit / rate limit.
+  // Set early so a fast double-click is no-op.
+  if (window.__analyzing) return;
+  // NOTE on the lead-capture flow:
+  //   We no longer block analysis behind a modal. Anonymous visitors get the
+  //   FREE-tier analysis (diagnosis card with the total overcharge headline)
+  //   right away — they see the *value* first, which is what makes them want
+  //   to register. The inline form inside renderFreeTierCTA() handles the
+  //   actual lead capture and upgrades them to LEAD tier in place.
+  //   showEmailCapture()/closeEmailModal() are kept around because legacy
+  //   code paths still reference them, but they're no longer wired into the
+  //   primary analyze flow.
+  const textInput = document.getElementById('deal-input').value.trim();
+  if (!processedBase64 && textInput.length < 10) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].noInput}</div>`;
+    return;
+  }
+
+  window.__analyzing = true;
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.textContent = lang === 'ru' ? 'Читаем документ...' : 'Reading document...';
+  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  try {
+    let userContent = [];
+    if (processedBase64) {
+      if (isPdf) {
+        userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64 } });
+      } else {
+        userContent.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:processedBase64 } });
+      }
+    }
+    // Attach additional pages if user uploaded them
+    extraImages.forEach((img, i) => {
+      userContent.push(img.isPdf
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:img.data } }
+        : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data:img.data } });
+    });
+    const pageNote = extraImages.length > 0 ? ` (${extraImages.length + 1} pages total)` : '';
+    const promptText = lang === 'ru'
+      ? `Тип сделки: ${dealType}${pageNote}${textInput ? '\n\nДоп. информация:\n'+textInput : processedBase64 ? '\n\nИзвлеки все данные из документа.' : ''}`
+      : `Deal type: ${dealType}${pageNote}${textInput ? '\n\nUser notes:\n'+textInput : processedBase64 ? '\n\nExtract all data from this document.' : ''}`;
+    userContent.push({ type:'text', text: promptText });
+
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: [{ type: 'text', text: buildExtractionSystem(), cache_control: { type: 'ephemeral' } }],
+        messages: [{ role:'user', content: userContent }]
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const extracted = stripThinking(data.content?.map(b => b.text||'').join('') || '');
+    if (!extracted) throw new Error('Empty response from AI');
+
+    showConfirmationStep(extracted);
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  }
+
+  // Clear re-entry guard once extraction is done (or failed) — user is now
+  // on the confirmation step (or seeing the error). runFullAnalysis re-arms it.
+  window.__analyzing = false;
+  btn.disabled = false;
+  btn.textContent = T[lang].analyzeBtn;
+}
+
+function extractVIN(text) {
+  const m = text.match(/\b([A-HJ-NPR-Z0-9]{17})\b/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+function extractMake(text) {
+  const makes = ['LEXUS','TOYOTA','BMW','MERCEDES','HONDA','FORD','CHEVROLET','NISSAN','HYUNDAI','KIA','AUDI','VOLKSWAGEN','SUBARU','MAZDA','JEEP','DODGE','RAM','GMC','CADILLAC','ACURA','INFINITI','GENESIS','RIVIAN','TESLA','LINCOLN','VOLVO','PORSCHE'];
+  return makes.find(m => text.toUpperCase().includes(m)) || null;
+}
+
+function getStickerLinks(make, vin) {
+  if (!vin) return [];
+  const m = (make || '').toUpperCase();
+  const links = [];
+  if (m === 'FORD' || m === 'LINCOLN') {
+    links.push({ label: 'Window Sticker PDF', url: `https://www.windowsticker.forddirect.com/windowsticker.pdf?vin=${vin}` });
+  } else if (m === 'TOYOTA' || m === 'LEXUS') {
+    links.push({ label: 'Window Sticker PDF', url: `https://www.toyota.com/t3Portal/prodpage/getWindowStickerPdf?vin=${vin}` });
+  } else if (m === 'BMW') {
+    links.push({ label: 'Window Sticker', url: `https://www.bmwusa.com/windows-sticker.html#${vin}` });
+  } else if (m === 'CHEVROLET' || m === 'GMC' || m === 'BUICK' || m === 'CADILLAC') {
+    links.push({ label: 'Window Sticker', url: `https://www.chevrolet.com/bypass/pcf/care-cs-owner-center-service/v1/windows-sticker/pdf?vin=${vin}` });
+  } else if (m === 'HONDA' || m === 'ACURA') {
+    links.push({ label: 'Window Sticker', url: `https://www.honda.com/localization/index.cfm?VIN=${vin}` });
+  } else if (m === 'NISSAN' || m === 'INFINITI') {
+    links.push({ label: 'Window Sticker', url: `https://www.nissanusa.com/windowsticker.pdf?vin=${vin}` });
+  } else if (m === 'HYUNDAI') {
+    links.push({ label: 'Window Sticker', url: `https://www.hyundaiusa.com/content/dam/hyundai/us/window-sticker/${vin}.pdf` });
+  } else if (m === 'KIA') {
+    links.push({ label: 'Window Sticker', url: `https://www.kia.com/us/en/window-sticker?vin=${vin}` });
+  } else if (m === 'SUBARU') {
+    links.push({ label: 'Window Sticker', url: `https://www.subaru.com/content/dam/subaruofamerica/images/window-sticker/${vin}.pdf` });
+  } else if (m === 'VOLKSWAGEN') {
+    links.push({ label: 'Window Sticker', url: `https://www.vw.com/en/models.html?vin=${vin}` });
+  } else if (m === 'JEEP' || m === 'DODGE' || m === 'RAM' || m === 'CHRYSLER') {
+    links.push({ label: 'Window Sticker', url: `https://www.jeep.com/windowsticker/getWindowStickerPdf.do?vin=${vin}` });
+  } else if (m === 'MERCEDES' || m === 'MERCEDES-BENZ') {
+    links.push({ label: 'Window Sticker', url: `https://www.mbusa.com/content/dam/mb-nafta/us/window-sticker/${vin}.pdf` });
+  } else if (m === 'AUDI') {
+    links.push({ label: 'Window Sticker', url: `https://www.audiusa.com/content/dam/audiusa/window-sticker/${vin}.pdf` });
+  } else if (m === 'VOLVO') {
+    links.push({ label: 'Window Sticker', url: `https://www.volvocars.com/us/window-sticker?vin=${vin}` });
+  } else if (m === 'TESLA') {
+    links.push({ label: 'Window Sticker', url: `https://www.tesla.com/window-sticker/${vin}` });
+  } else if (m === 'MAZDA') {
+    links.push({ label: 'Window Sticker', url: `https://www.mazdausa.com/content/dam/mazdausa/us/window-sticker/${vin}.pdf` });
+  } else if (m === 'GENESIS') {
+    links.push({ label: 'Window Sticker', url: `https://www.genesis.com/us/en/window-sticker.html?vin=${vin}` });
+  } else if (m === 'RIVIAN') {
+    links.push({ label: 'Window Sticker', url: `https://rivian.com/support/article/where-can-i-find-my-window-sticker` });
+  }
+  links.push({ label: 'AutoiPacket', url: `https://www.autoipacket.com/window_sticker/${vin}` });
+  links.push({ label: 'Google Search', url: `https://www.google.com/search?q=%22window+sticker%22+%22${vin}%22` });
+  return links;
+}
+
+async function lookupVIN(vin) {
+  try {
+    const r = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/${vin}?format=json`);
+    const d = await r.json();
+    const v = d.Results?.[0];
+    if (!v || !v.Make) return null;
+    return { year: v.ModelYear, make: v.Make, model: v.Model, trim: v.Trim };
+  } catch { return null; }
+}
+
+async function showConfirmationStep(extractedText) {
+  const ru = lang === 'ru';
+  const safe = extractedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const vin = extractVIN(extractedText);
+  const make = extractMake(extractedText);
+  const stickerLinks = getStickerLinks(make, vin);
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card" style="margin-top:1.5rem">
+      <div class="result-header">
+        <span class="verdict-badge verdict-warning">📋 ${ru ? 'ПРОВЕРЬТЕ ЦИФРЫ' : 'CONFIRM NUMBERS'}</span>
+      </div>
+      <div class="result-body">
+        <p style="margin-bottom:0.75rem;color:var(--text);font-weight:500">${ru
+          ? 'AI прочитал эти данные. <strong>Исправьте всё что неверно</strong> — особенно модель авто и цену:'
+          : 'AI read these numbers. <strong>Fix anything wrong</strong> — especially car model and price:'}</p>
+        <textarea id="confirmed-numbers" style="min-height:200px;font-size:13px;margin-bottom:1rem">${safe}</textarea>
+
+        <div style="background:var(--surface2);border:1px solid var(--accent-border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem">
+          <div style="font-weight:600;color:var(--accent);margin-bottom:0.5rem;font-family:Syne,sans-serif;font-size:0.9rem">
+            📋 MSRP ${ru ? '(цена по прайслисту)' : '(sticker price)'}
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:0.75rem">
+            ${ru
+              ? 'Знаете MSRP? Это цена в окне машины или в email от дилера. Без MSRP AI не сможет проверить скидку.'
+              : 'Know the MSRP? It\'s on the window sticker or dealer email. Without it AI can\'t verify the discount.'}
+          </div>
+          <input type="text" id="msrp-input" placeholder="${ru ? 'Например: $72,500 — или оставьте пустым' : 'e.g. $72,500 — or leave blank'}"
+            style="width:100%;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box">
+          <div id="vin-info" style="margin-top:0.75rem;font-size:12px;color:var(--text-dim)">
+            ${vin ? `VIN: <span style="color:var(--text-muted);font-family:monospace">${vin}</span> — <span id="vin-lookup-status">${ru ? '🔍 Проверяем...' : '🔍 Looking up...'}</span>` : ''}
+          </div>
+        </div>
+
+        <button class="analyze-btn" onclick="runFullAnalysis()">${ru ? 'Всё верно — запустить анализ →' : 'Confirmed — run full analysis →'}</button>
+      </div>
+    </div>`;
+
+  if (vin) {
+    const vinData = await lookupVIN(vin);
+    const links = getStickerLinks(vinData?.make || make, vin);
+    const statusEl = document.getElementById('vin-lookup-status');
+    if (!statusEl) return;
+    const linksHtml = links.map(l => `<a href="${l.url}" target="_blank" style="color:var(--accent)">📄 ${l.label}</a>`).join(' · ');
+
+    // Market price research links — constructed from decoded VIN data
+    let priceLinksHtml = '';
+    if (vinData) {
+      const y = encodeURIComponent(vinData.year || '');
+      const mk = encodeURIComponent((vinData.make || '').toLowerCase());
+      const mo = encodeURIComponent((vinData.model || '').toLowerCase());
+      const kbbUrl = `https://www.kbb.com/${mk}/${mo}/${y}/`;
+      const cgUrl  = `https://www.cargurus.com/Cars/new/nl#listing=2&keyword=${y}+${vinData.make}+${vinData.model}`;
+      const atUrl  = `https://www.autotrader.com/cars-for-sale/new-cars/${mk}/${mo}/?year=${y}`;
+      priceLinksHtml = `<div style="margin-top:0.5rem;font-size:12px;color:var(--text-muted)">`
+        + `${ru ? '💰 Рыночная цена:' : '💰 Market price:'} `
+        + `<a href="${kbbUrl}" target="_blank" style="color:var(--accent)">KBB</a> · `
+        + `<a href="${cgUrl}" target="_blank" style="color:var(--accent)">CarGurus</a> · `
+        + `<a href="${atUrl}" target="_blank" style="color:var(--accent)">AutoTrader</a></div>`;
+    }
+
+    if (vinData) {
+      statusEl.innerHTML = `<span style="color:var(--green)">✓ ${vinData.year} ${vinData.make} ${vinData.model}${vinData.trim ? ' ' + vinData.trim : ''}</span>`
+        + (linksHtml ? ' · ' + linksHtml : '');
+    } else {
+      statusEl.innerHTML = linksHtml || `<span style="color:var(--text-dim)">${ru ? 'VIN не найден в базе NHTSA' : 'VIN not found in NHTSA database'}</span>`;
+    }
+    if (priceLinksHtml) {
+      const vinInfoEl = document.getElementById('vin-info');
+      if (vinInfoEl) vinInfoEl.insertAdjacentHTML('beforeend', priceLinksHtml);
+    }
+  }
+}
+
+async function runFullAnalysis() {
+  // Re-entrancy guard — prevent double-submit from burning credit / rate limit.
+  if (window.__analyzing) return;
+  window.__analyzing = true;
+  const confirmed = document.getElementById('confirmed-numbers').value.trim();
+  const msrp = (document.getElementById('msrp-input')?.value || '').trim();
+  const msrpLine = msrp ? `\nMSRP (confirmed by user): ${msrp}` : '';
+  startLoadingUI();
+
+  try {
+    const userContent = [{
+      type: 'text',
+      text: lang === 'ru'
+        ? `Тип сделки: ${dealType}\n\nПользователь подтвердил следующие данные из документа. Используй ТОЛЬКО эти данные для анализа:${msrpLine}\n\n${confirmed}`
+        : `Deal type: ${dealType}\n\nUser confirmed these numbers from the document. Use ONLY these for analysis:${msrpLine}\n\n${confirmed}`
+    }];
+
+    // Stash the request body so the inline FREE→LEAD unlock form can re-send the
+    // exact same prompt at a higher tier without forcing the user to re-upload
+    // their dealer quote. We overwrite accessTier on re-send; everything else
+    // (model, system prompt, messages, image content) stays identical.
+    const analysisRequestBody = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2500,
+      system: [{ type: 'text', text: buildSystem(), cache_control: { type: 'ephemeral' } }],
+      messages: [{ role:'user', content: userContent }],
+      accessTier: getTier()
+    };
+    window.lastAnalysisRequest = analysisRequestBody;
+
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify(analysisRequestBody)
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = stripThinking(data.content?.map(b => b.text||'').join('') || '');
+    if (!text) throw new Error('Empty response from AI');
+
+    // Split AI output into the structured diagnosis header and the markdown body
+    const { diagnosis, body } = extractDiagnosis(text);
+
+    // Persist BOTH the raw text (for PDF/email features) and the parsed diagnosis,
+    // so that after the user pays and returns with ?paid=true we can re-render
+    // without forcing them to re-paste their deal.
+    window.lastAnalysisText  = body;
+    window.lastDiagnosis     = diagnosis;
+    window.lastConfirmedData = confirmed;
+    try {
+      sessionStorage.setItem('lastAnalysisBody', body);
+      sessionStorage.setItem('lastDiagnosis', diagnosis ? JSON.stringify(diagnosis) : '');
+    } catch (_) { /* sessionStorage may be full — fine, we just lose persistence */ }
+
+    // Verdict: prefer the JSON's explicit verdict; fall back to text heuristics
+    let vClass = 'verdict-warning', vText = T[lang].warn;
+    if (diagnosis && diagnosis.verdict) {
+      if (diagnosis.verdict === 'good')   { vClass = 'verdict-good';   vText = T[lang].good; }
+      if (diagnosis.verdict === 'danger') { vClass = 'verdict-danger'; vText = T[lang].danger; }
+    } else {
+      const up = body.toUpperCase();
+      if (up.includes('ХОРОШО') || up.includes('LOOKS GOOD') || up.includes('ВЫГЛЯДИТ НОРМАЛЬНО') || up.includes('REASONABLE')) { vClass='verdict-good'; vText=T[lang].good; }
+      if (up.includes('КРАСНЫЕ ФЛАГИ') || up.includes('RED FLAGS') || up.includes('СТОП') || up.includes('WALK AWAY')) { vClass='verdict-danger'; vText=T[lang].danger; }
+    }
+
+    const ru = lang === 'ru';
+
+    // ── Tier-aware composition ───────────────────────────────────────────
+    // The server already stripped sections this user shouldn't see, so we just
+    // split what came back into breakdown + execution and render each tier its
+    // appropriate CTA. Dev mode always sees everything.
+    const tier = isDev() ? 'full' : getTier();
+    const sections = splitTierSections(body);
+
+    // The breakdown content can be missing (free tier) or present (lead/full).
+    // Likewise execution is FULL-only. Loose text outside the tags falls into
+    // `remainder` and is rendered with the breakdown so we don't silently drop it.
+    const breakdownMarkdown = tier === 'free'
+      ? ''
+      : [sections.breakdown, sections.remainder].filter(Boolean).join('\n\n');
+    const executionMarkdown = sections.execution;
+
+    // Choose the CTA based on tier:
+    //   free  → register at Stan Store (unlocks LEAD for free)
+    //   lead  → free brokerage offer (the actual paying-customer conversion)
+    //   full  → no CTA, the user already has everything
+    let ctaHtml = '';
+    if (tier === 'free') ctaHtml = '<div id="paywall-placeholder"></div>';
+    else if (tier === 'lead') ctaHtml = renderLeadTierCTA();
+
+    const breakdownHtml = breakdownMarkdown
+      ? `<div class="result-body prescription-body">${renderMarkdown(breakdownMarkdown)}</div>`
+      : '';
+    const executionHtml = executionMarkdown
+      ? `<div class="result-body prescription-body" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+           <div style="font-family:Syne,sans-serif;font-size:0.85rem;font-weight:700;color:var(--accent);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.5rem">
+             ${ru ? '🎯 Готовый пакет для торга' : '🎯 Execution package'}
+           </div>
+           ${renderMarkdown(executionMarkdown)}
+         </div>`
+      : '';
+
+    // Anyone with full tier (paid or dev) gets the action buttons (PDF, email, etc).
+    const showActionButtons = tier === 'full';
+
+    document.getElementById('result-area').innerHTML = `
+      <div class="result-card">
+        <div class="print-header" style="display:none">
+          <strong style="font-size:1.1rem">AI DealCheck</strong> &nbsp;·&nbsp; aidealcheck.com<br>
+          <span style="font-size:12px;color:#555">@pereprodavec_vlad &nbsp;·&nbsp; calendly.com/cars_with_vlad &nbsp;·&nbsp; ${new Date().toLocaleDateString()}</span>
+        </div>
+        <div class="result-header">
+          <span class="verdict-badge ${vClass}">${vText}</span>
+        </div>
+        ${renderDiagnosisCard(diagnosis)}
+        ${breakdownHtml}
+        ${ctaHtml}
+        <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          ${showActionButtons ? `
+          <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+            📄 ${ru ? 'Скачать PDF' : 'Download PDF'}
+          </button>
+          <button onclick="shareAnalysis('${vText.replace(/'/g,"\\'")}', '${vClass}', this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center;gap:8px">
+            📋 ${ru ? 'Скопировать' : 'Copy'}
+          </button>` : ''}
+          <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;gap:8px;border-color:var(--accent);color:var(--accent)">
+            🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}
+          </button>
+        </div>
+        <div id="email-area"></div>
+        ${vClass === 'verdict-danger' ? `
+        <div style="margin:0 1.25rem 1.25rem;background:var(--red-bg);border:1px solid rgba(231,76,60,0.3);border-radius:var(--radius);padding:1.25rem;text-align:center">
+          <div style="font-size:1.2rem;margin-bottom:0.5rem">🚨</div>
+          <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--red);margin-bottom:0.4rem;font-size:0.95rem">
+            ${ru ? 'Серьёзные проблемы — не подписывайте без консультации' : 'Serious red flags — don\'t sign without a consultation'}
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
+            ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <a href="${CONTACT.instagram}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+              📱 Instagram
+            </a>
+            <a href="${CONTACT.telegram}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;background:#229ED9;color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+              ✈️ Telegram
+            </a>
+            <a href="${CONTACT.calendly}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border:1px solid var(--red);color:var(--red);font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none">
+              📅 ${ru ? 'Записаться' : 'Book call'}
+            </a>
+          </div>
+        </div>` : ''}
+        ${buildCtaBox(diagnosis, lang)}
+      </div>`;
+
+    analysisCount++;
+    sessionStorage.setItem('analysisCount', analysisCount.toString());
+    incrementGlobalCount();
+    const remaining = getRemainingAnalyses();
+    if (tier === 'free') {
+      setTimeout(() => appendPaywall(), 5000);
+    } else {
+      updateCounter();
+    }
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  } finally {
+    stopLoadingUI();
+    window.__analyzing = false;
+  }
+}
+
+async function generateEmail() {
+  const ru = lang === 'ru';
+  const emailArea = document.getElementById('email-area');
+  if (!emailArea) return;
+  emailArea.innerHTML = `<div style="text-align:center;padding:1.5rem"><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: ru
+          ? 'Ты пишешь профессиональные переговорные письма от покупателя автомобиля дилеру. Только текст письма, никаких пояснений. Письмо должно быть вежливым, конкретным (используй реальные цифры из анализа), уверенным. Максимум 180 слов. Пиши на русском.'
+          : 'You write professional negotiation emails from car buyers to dealers. Return only the email text, no explanations. Be polite, specific (use real numbers from the analysis), confident, and end with a clear ask. Max 180 words.',
+        messages: [{ role: 'user', content: ru
+          ? `На основе этого анализа сделки напиши письмо дилеру с конкретными просьбами об улучшении условий:\n\n${window.lastAnalysisText || window.lastConfirmedData}`
+          : `Based on this deal analysis, write a negotiation email to the dealer requesting specific improvements:\n\n${window.lastAnalysisText || window.lastConfirmedData}`
+        }]
+      })
+    });
+    const d = await resp.json();
+    const email = d.content?.map(b => b.text||'').join('') || '';
+    if (!email) throw new Error('Empty response');
+    window.lastEmailText = email;
+
+    emailArea.innerHTML = `
+      <div style="margin:0 1.25rem 1.25rem;background:var(--surface2);border:1px solid var(--accent-border);border-radius:var(--radius);padding:1.25rem">
+        <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--accent);margin-bottom:0.75rem;font-size:0.85rem;letter-spacing:0.05em">
+          📧 ${ru ? 'ГОТОВОЕ ПИСЬМО ДИЛЕРУ' : 'DEALER NEGOTIATION EMAIL'}
+        </div>
+        <div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.8;margin-bottom:1rem">${email.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        <button onclick="copyEmail(this)" style="padding:8px 18px;border-radius:var(--radius);border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
+          📋 ${ru ? 'Скопировать письмо' : 'Copy email'}
+        </button>
+      </div>`;
+  } catch(err) {
+    emailArea.innerHTML = `<div class="error-msg" style="margin:0 1.25rem 1rem">${err.message}</div>`;
+  }
+}
+
+function copyEmail(btn) {
+  navigator.clipboard.writeText(window.lastEmailText || '').then(() => {
+    const orig = btn.textContent;
+    btn.textContent = lang === 'ru' ? '✓ Скопировано!' : '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+function shareAnalysis(verdict, vClass, btn) {
+  const ru = lang === 'ru';
+  const scoreMatch = (window.lastAnalysisText || '').match(/(\d+)\/10/);
+  const score = scoreMatch ? scoreMatch[1] + '/10' : '';
+  const emoji = vClass === 'verdict-good' ? '✅' : vClass === 'verdict-danger' ? '🚩' : '⚠️';
+  const diag = window.lastDiagnosis;
+  const overpay = diag?.totalOverpay > 0 ? (ru ? `💸 Переплата: ~$${Math.round(diag.totalOverpay).toLocaleString()}` : `💸 Overpayment risk: ~$${Math.round(diag.totalOverpay).toLocaleString()}`) : '';
+  const issueCount = diag?.issues?.length > 0 ? (ru ? `🔴 Проблем найдено: ${diag.issues.length}` : `🔴 Issues found: ${diag.issues.length}`) : '';
+  const text = ru
+    ? [
+        `${emoji} Проверил сделку через AI DealCheck`,
+        score ? `Оценка: ${score}` : '',
+        verdict,
+        '',
+        overpay,
+        issueCount,
+        '',
+        `🚗 Проверь свою сделку БЕСПЛАТНО:`,
+        `aidealcheck.com`,
+        ``,
+        `@pereprodavec_vlad #DealCheck #авто #переговоры`
+      ].filter(Boolean).join('\n')
+    : [
+        `${emoji} Just had my car deal checked by AI DealCheck`,
+        score ? `Score: ${score}` : '',
+        verdict,
+        '',
+        overpay,
+        issueCount,
+        '',
+        `🚗 Check YOUR deal FREE:`,
+        `aidealcheck.com`,
+        ``,
+        `@pereprodavec_vlad #DealCheck #CarBuying #CarDeals`
+      ].filter(Boolean).join('\n');
+
+  // Capture btn before async — event.target is unavailable inside .then()
+  const target = btn || document.activeElement;
+  navigator.clipboard.writeText(text).then(() => {
+    if (!target) return;
+    const orig = target.innerHTML;
+    target.innerHTML = ru ? '✓ Скопировано!' : '✓ Copied!';
+    target.style.color = 'var(--green)';
+    target.style.borderColor = 'var(--green)';
+    setTimeout(() => { target.innerHTML = orig; target.style.color=''; target.style.borderColor=''; }, 2500);
+  });
+}
+
+function setMode(mode) {
+  compareMode = mode === 'compare';
+  const ru = lang === 'ru';
+  document.getElementById('mode-single').classList.toggle('active', !compareMode);
+  document.getElementById('mode-compare').classList.toggle('active', compareMode);
+  document.getElementById('deal-b-section').style.display = compareMode ? 'block' : 'none';
+  document.getElementById('label-a').style.display = compareMode ? 'block' : 'none';
+  const btn = document.getElementById('analyze-btn');
+  btn.textContent = compareMode
+    ? (ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →')
+    : (ru ? 'Проанализировать сделку →' : 'Analyze my deal →');
+}
+
+function handleDragB(e) { e.preventDefault(); document.getElementById('upload-zone-b').classList.add('dragover'); }
+function handleDragLeaveB(e) { document.getElementById('upload-zone-b').classList.remove('dragover'); }
+function handleDropB(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone-b').classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) processFileB(f);
+}
+function handleFileB(e) { const f = e.target.files[0]; if (f) processFileB(f); }
+
+function removeFileB() {
+  processedBase64_b = null; isPdf_b = false;
+  document.getElementById('preview-area-b').style.display = 'none';
+  document.getElementById('preview-area-b').innerHTML = '';
+  document.getElementById('file-input-b').value = '';
+}
+
+async function processFileB(file) {
+  const name = file.name || 'file';
+  isPdf_b = file.type === 'application/pdf';
+  const preview = document.getElementById('preview-area-b');
+  preview.style.display = 'block';
+  preview.innerHTML = `<div class="file-card"><span>⏳ ${T[lang].processing}</span></div>`;
+  if (isPdf_b) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      processedBase64_b = e.target.result.split(',')[1];
+      processedMime_b = 'application/pdf';
+      preview.innerHTML = `<div class="file-card"><span>📄 ${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok">${T[lang].ready}</div>`;
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+  try {
+    processedBase64_b = await compressImage(file, 1800, 1800, 0.85);
+    processedMime_b = 'image/jpeg';
+    const src = 'data:image/jpeg;base64,' + processedBase64_b;
+    preview.innerHTML = `<img src="${src}" class="preview-img" alt="Deal B"><div class="preview-meta"><span>${name}</span><button class="remove-btn" onclick="removeFileB()">✕</button></div><div class="status-ok" style="margin-top:8px">${T[lang].ready}</div>`;
+  } catch(err) {
+    // Real failure — surface a clear error instead of sending wrong-mime bytes to AI.
+    console.error('[processFileB] image processing failed:', err && err.message, err);
+    processedBase64_b = null;
+    const ru = lang === 'ru';
+    preview.innerHTML = `<div class="error-msg">${ru
+      ? `Не удалось обработать «${name}». Попробуйте загрузить JPEG или PDF.`
+      : `Could not process "${name}". Try uploading a JPEG or PDF instead.`}</div>`;
+    document.getElementById('file-input-b').value = '';
+  }
+}
+
+function buildCompareSystem() {
+  const ru = lang === 'ru';
+  return `You are Vlad — brutally honest car deal expert, 10+ years inside Mercedes-Benz dealerships. The buyer has submitted TWO deal documents for comparison. Your job: tell them EXACTLY which deal is better and by how much in dollars.
+
+RESPOND IN: ${ru ? 'RUSSIAN (русский язык)' : 'ENGLISH'}
+
+STRUCTURE — use these exact sections:
+
+## 🅐 СДЕЛКА А / DEAL A
+List key numbers: car, selling price, fees, financing terms, monthly payment, total cost
+
+## 🅑 СДЕЛКА Б / DEAL B
+List key numbers: car, selling price, fees, financing terms, monthly payment, total cost
+
+## ⚖️ СРАВНЕНИЕ / HEAD-TO-HEAD
+Compare each dimension side by side:
+- Price / discount from MSRP
+- Total cost over ownership period
+- Fees (doc fee, add-ons, accessories)
+- Financing rate (if applicable)
+- Trade-in (if applicable)
+- Red flags in each deal
+
+## 🏆 ПОБЕДИТЕЛЬ / WINNER
+State clearly: "Deal A is better by approximately $X because..." OR "Deal B is better by approximately $X because..."
+If one deal is a completely different car, compare value-for-money, not just price.
+
+## 📌 ЧТО ДЕЛАТЬ ДАЛЬШЕ / NEXT STEP
+One concrete action: what to say to which dealer to close the best possible deal.`;
+}
+
+async function compareDeal() {
+  const ru = lang === 'ru';
+  if (window.__analyzing) return;
+  if (!processedBase64 && !processedBase64_b) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${ru ? 'Загрузите хотя бы одну сделку для сравнения.' : 'Upload at least one deal to compare.'}</div>`;
+    return;
+  }
+  window.__analyzing = true;
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.textContent = ru ? 'Читаем документы...' : 'Reading documents...';
+  document.getElementById('result-area').innerHTML = '<div style="text-align:center"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  // Step 1: Extract numbers from both documents so the user can verify before full comparison
+  try {
+    const extractContent = [];
+    if (processedBase64) {
+      extractContent.push({ type:'text', text: ru ? '## СДЕЛКА А:' : '## DEAL A:' });
+      extractContent.push(isPdf
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64 } }
+        : { type:'image', source:{ type:'base64', media_type:processedMime, data:processedBase64 } });
+    }
+    if (processedBase64_b) {
+      extractContent.push({ type:'text', text: ru ? '## СДЕЛКА Б:' : '## DEAL B:' });
+      extractContent.push(isPdf_b
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:processedBase64_b } }
+        : { type:'image', source:{ type:'base64', media_type:processedMime_b, data:processedBase64_b } });
+    }
+    const textInput = document.getElementById('deal-input').value.trim();
+    if (textInput) extractContent.push({ type:'text', text: (ru ? 'Доп. информация:\n' : 'Additional info:\n') + textInput });
+    extractContent.push({ type:'text', text: ru ? 'Извлеки ключевые данные из каждой сделки отдельно.' : 'Extract key numbers from each deal separately.' });
+
+    const exResp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 700,
+        system: [{ type:'text', text: buildExtractionSystem(), cache_control:{ type:'ephemeral' } }],
+        messages: [{ role:'user', content: extractContent }]
+      })
+    });
+    const exData = await exResp.json();
+    if (exData.error) throw new Error(exData.error.message || JSON.stringify(exData.error));
+    const extracted = stripThinking(exData.content?.map(b => b.text||'').join('') || '');
+
+    window.__analyzing = false;
+    btn.disabled = false;
+    btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
+
+    // Show confirmation step
+    const safe = extracted.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    document.getElementById('result-area').innerHTML = `
+      <div class="result-card" style="margin-top:1.5rem">
+        <div class="result-header">
+          <span class="verdict-badge verdict-warning">📋 ${ru ? 'ПРОВЕРЬТЕ ЦИФРЫ' : 'CONFIRM NUMBERS'}</span>
+        </div>
+        <div class="result-body">
+          <p style="margin-bottom:0.75rem;color:var(--text);font-weight:500">${ru
+            ? 'AI прочитал эти данные из обоих документов. <strong>Исправьте всё что неверно</strong>:'
+            : 'AI read these numbers from both documents. <strong>Fix anything wrong</strong>:'}</p>
+          <textarea id="confirmed-numbers-compare" style="min-height:240px;font-size:13px;margin-bottom:1rem">${safe}</textarea>
+          <button class="analyze-btn" onclick="runCompareAnalysis()">${ru ? 'Всё верно — сравнить →' : 'Confirmed — compare →'}</button>
+        </div>
+      </div>`;
+    return;
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+    window.__analyzing = false;
+    btn.disabled = false;
+    btn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →';
+    return;
+  }
+}
+
+async function runCompareAnalysis() {
+  const ru = lang === 'ru';
+  if (window.__analyzing) return;
+  window.__analyzing = true;
+  const confirmed = document.getElementById('confirmed-numbers-compare')?.value?.trim() || '';
+  startLoadingUI();
+
+  try {
+    const userContent = [{ type:'text', text: confirmed || (ru ? 'Сравни эти две сделки.' : 'Compare these two deals.') }];
+
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2500,
+        system: [{ type: 'text', text: buildCompareSystem(), cache_control: { type: 'ephemeral' } }],
+        messages: [{ role:'user', content: userContent }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = stripThinking(data.content?.map(b => b.text||'').join('') || '');
+    if (!text) throw new Error('Empty response from AI');
+
+    // Same gating logic as runFullAnalysis — free users see a teaser + paywall,
+    // paid users get the full comparison + action buttons.
+    window.lastAnalysisText = text;
+    try { sessionStorage.setItem('lastAnalysisBody', text); sessionStorage.setItem('lastDiagnosis', ''); } catch (_) {}
+
+    // Compare-deals output is treated as LEAD-tier content: free to see for any
+    // captured lead, with the brokerage CTA below to convert. We no longer blur
+    // it or gate it behind the $9/$49 paywall — the three-tier funnel routes
+    // payment intent through the LEAD CTA's contact options instead.
+    const compareTier = isDev() ? 'full' : getTier();
+    const fullActions = compareTier === 'full';
+    const compareCtaHtml = compareTier === 'free' ? '<div id="paywall-placeholder"></div>'
+                         : compareTier === 'lead' ? renderLeadTierCTA()
+                         : '';
+    document.getElementById('result-area').innerHTML = `
+      <div class="result-card">
+        <div class="result-header">
+          <span class="verdict-badge verdict-warning">⚖️ ${ru ? 'СРАВНЕНИЕ СДЕЛОК' : 'DEAL COMPARISON'}</span>
+        </div>
+        <div class="result-body">${renderMarkdown(text)}</div>
+        ${compareCtaHtml}
+        <div style="display:flex;gap:8px;padding:0 1.25rem 1.25rem;flex-wrap:wrap">
+          ${fullActions ? `
+          <button onclick="downloadReport()" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📄 ${ru ? 'Скачать PDF' : 'Download PDF'}</button>
+          <button onclick="shareAnalysis('${ru ? 'Сравнил 2 сделки через DealCheck' : 'Compared 2 deals with DealCheck'}','verdict-warning',this)" class="pay-btn" style="flex:1;min-width:120px;justify-content:center">📋 ${ru ? 'Скопировать' : 'Copy'}</button>` : ''}
+          <button onclick="shareWithRef(this)" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;border-color:var(--accent);color:var(--accent)">🎁 ${ru ? 'Подарить другу' : 'Gift a friend'}</button>
+        </div>
+        <div id="email-area"></div>
+        ${buildCtaBox(null, lang)}
+      </div>`;
+
+    analysisCount++;
+    sessionStorage.setItem('analysisCount', analysisCount.toString());
+    incrementGlobalCount();
+    const remaining = getRemainingAnalyses();
+    if (compareTier === 'free') setTimeout(() => appendPaywall(), 5000);
+    else updateCounter();
+  } catch(err) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${T[lang].errPrefix}${err.message}</div>`;
+  } finally {
+    stopLoadingUI();
+    window.__analyzing = false;
+    const compareBtn = document.getElementById('analyze-btn');
+    if (compareBtn) { compareBtn.disabled = false; compareBtn.textContent = ru ? 'Сравнить обе сделки →' : 'Compare Both Deals →'; }
+  }
+}
+
+// ── PDF / PRINT ───────────────────────────────────────────────────────────────
+function downloadReport() {
+  window.print();
+}
+
+// ── EMAIL CAPTURE ─────────────────────────────────────────────────────────────
+function showEmailCapture(onDone) {
+  const ru = lang === 'ru';
+  const modal = document.createElement('div');
+  modal.id = 'email-modal';
+  modal.className = 'email-modal-overlay';
+  modal.innerHTML = `
+    <div class="email-modal-box">
+      <div style="font-size:2.2rem;margin-bottom:0.6rem">🔓</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:0.4rem;color:var(--text)">
+        ${ru ? 'Бесплатный анализ готов!' : 'Your free analysis is ready!'}
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.5">
+        ${ru
+          ? 'Оставьте контакты — пришлём анализ на почту и сможем помочь лично, если сделка окажется сложной.'
+          : 'Leave your contact info — we\'ll email your report and can help personally if the deal gets complicated.'}
+      </div>
+      <div class="name-row">
+        <input type="text" id="firstname-capture-input"
+          placeholder="${ru ? 'Имя' : 'First name'}"
+          onkeydown="if(event.key==='Enter')document.getElementById('lastname-capture-input').focus()">
+        <input type="text" id="lastname-capture-input"
+          placeholder="${ru ? 'Фамилия' : 'Last name'}"
+          onkeydown="if(event.key==='Enter')document.getElementById('email-capture-input').focus()">
+      </div>
+      <input type="email" id="email-capture-input"
+        placeholder="${ru ? 'ваш@email.com' : 'your@email.com'}"
+        onkeydown="if(event.key==='Enter')document.getElementById('phone-capture-input').focus()">
+      <input type="tel" id="phone-capture-input"
+        placeholder="${ru ? '+1 (555) 000-0000' : '+1 (555) 000-0000'}"
+        onkeydown="if(event.key==='Enter')submitCapturedEmail()">
+      <button onclick="submitCapturedEmail()"
+        style="width:100%;padding:13px;border-radius:var(--radius);border:none;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer">
+        ${ru ? 'Получить анализ →' : 'Get my analysis →'}
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+  window._emailCaptureCallback = onDone;
+  setTimeout(() => { const i = document.getElementById('firstname-capture-input'); if(i) i.focus(); }, 120);
+}
+
+async function submitCapturedEmail() {
+  const firstInput = document.getElementById('firstname-capture-input');
+  const lastInput  = document.getElementById('lastname-capture-input');
+  const emailInput = document.getElementById('email-capture-input');
+  const phoneInput = document.getElementById('phone-capture-input');
+  const firstName  = (firstInput?.value || '').trim();
+  const lastName   = (lastInput?.value || '').trim();
+  const email      = (emailInput?.value || '').trim();
+  const phone      = (phoneInput?.value || '').trim();
+
+  // Validate fields — show inline error rather than closing modal with invalid data
+  // (closing without setting capturedEmail would re-trigger the modal immediately)
+  const flash = (input, msg) => {
+    if (!input) return;
+    input.style.borderColor = 'var(--red)';
+    input.placeholder = msg;
+    input.value = '';
+    setTimeout(() => { input.style.borderColor = ''; }, 2000);
+    input.focus();
+  };
+
+  if (!firstName) { flash(firstInput, lang === 'ru' ? 'Имя' : 'First name required'); return; }
+  if (!lastName)  { flash(lastInput,  lang === 'ru' ? 'Фамилия' : 'Last name required'); return; }
+  if (!email || !email.includes('@')) {
+    flash(emailInput, lang === 'ru' ? 'Введите корректный email' : 'Enter a valid email');
+    return;
+  }
+  // Phone: require at least 7 digits (covers international formats)
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (phoneDigits.length < 7) {
+    flash(phoneInput, lang === 'ru' ? 'Введите номер телефона' : 'Enter a valid phone');
+    return;
+  }
+
+  localStorage.setItem('capturedLead_v2', '1');
+  localStorage.setItem('capturedEmail', email);
+  localStorage.setItem('capturedFirstName', firstName);
+  localStorage.setItem('capturedLastName',  lastName);
+  localStorage.setItem('capturedPhone', phone);
+
+  // Capture what they're analyzing — most valuable context for follow-up
+  const dealText      = (document.getElementById('deal-input')?.value || '').trim();
+  const hasAttachment = !!(typeof processedBase64 !== 'undefined' && processedBase64);
+
+  // Pull the uploaded document(s) so the backend can archive them to Blob and
+  // email Vlad the original files — without this, "Attachment: yes" is just a flag
+  // and the actual deal paperwork is lost.
+  const image = hasAttachment
+    ? { data: processedBase64, mime: (typeof processedMime !== 'undefined' && processedMime) || 'image/jpeg' }
+    : null;
+  const extras = (typeof extraImages !== 'undefined' && Array.isArray(extraImages))
+    ? extraImages.map((x) => ({ data: x.data, mime: x.mime || (x.isPdf ? 'application/pdf' : 'image/jpeg') }))
+    : [];
+
+  try {
+    await fetch('/api/collect-email', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, isDev() ? { 'x-dev-key': getDevKey() } : {}),
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        email,
+        phone: phone || null,
+        ref: new URLSearchParams(window.location.search).get('ref') || null,
+        dealText: dealText || null,
+        dealType: typeof dealType !== 'undefined' ? dealType : null,
+        hasAttachment,
+        lang: typeof lang !== 'undefined' ? lang : null,
+        image,
+        extras
+      })
+    });
+  } catch(e) { /* fail silently — never block the user */ }
+  closeEmailModal();
+}
+
+// Dead code path — the skip button was removed when all fields became required.
+// Kept as a safe no-op in case any orphaned onclick references it.
+function skipEmailCapture() { closeEmailModal(); }
+
+function closeEmailModal() {
+  const m = document.getElementById('email-modal');
+  if (m) m.remove();
+  if (window._emailCaptureCallback) {
+    const cb = window._emailCaptureCallback;
+    window._emailCaptureCallback = null;
+    cb();
+  }
+}
+
+// ── REFERRAL ──────────────────────────────────────────────────────────────────
+function getRefCode() {
+  let code = localStorage.getItem('refCode');
+  if (!code) {
+    code = Math.random().toString(36).substring(2, 9).toUpperCase();
+    localStorage.setItem('refCode', code);
+  }
+  return code;
+}
+
+function shareWithRef(btn) {
+  const ru = lang === 'ru';
+  const code = getRefCode();
+  const url  = `https://aidealcheck.com/check?ref=${code}`;
+  const text = ru
+    ? `🚗 Проверяй автосделки с AI — бесплатно!\n${url}\n\nПо моей ссылке получишь бонусный анализ 🎁\n@pereprodavec_vlad`
+    : `🚗 Check your car deal with AI — free!\n${url}\n\nUse my link for a bonus free analysis 🎁\n@pereprodavec_vlad`;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = ru ? '✓ Ссылка скопирована!' : '✓ Link copied!';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#000';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 2500);
+  });
+}
+
+// Injects the free-tier email capture card into the placeholder div that was
+// left in the result card on initial render. Called 5s after analysis so the
+// user reads the diagnosis before the form appears.
+let _loadingMsgTimer = null;
+let _loadingBarTimer = null;
+
+function startLoadingUI() {
+  const messages = [
+    'Читаю документ...',
+    'Проверяю цифры...',
+    'Ищу скрытые наценки...',
+    'Готовлю анализ...'
+  ];
+  document.getElementById('result-area').innerHTML = `
+    <div style="text-align:center;padding:2.5rem 1rem">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <div id="loading-msg" style="margin-top:1.25rem;font-size:14px;color:var(--text-muted);font-family:Inter,sans-serif;min-height:1.4em">${messages[0]}</div>
+      <div style="margin-top:1rem;width:220px;margin-left:auto;margin-right:auto">
+        <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div id="loading-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.5s linear"></div>
+        </div>
+      </div>
+    </div>`;
+
+  let msgIdx = 0;
+  _loadingMsgTimer = setInterval(() => {
+    msgIdx = Math.min(msgIdx + 1, messages.length - 1);
+    const el = document.getElementById('loading-msg');
+    if (el) el.textContent = messages[msgIdx];
+  }, 8000);
+
+  const startTime = Date.now();
+  _loadingBarTimer = setInterval(() => {
+    const pct = Math.min(90, ((Date.now() - startTime) / 45000) * 90);
+    const bar = document.getElementById('loading-bar');
+    if (bar) bar.style.width = pct + '%';
+  }, 500);
+}
+
+function stopLoadingUI() {
+  clearInterval(_loadingMsgTimer);
+  clearInterval(_loadingBarTimer);
+  _loadingMsgTimer = null;
+  _loadingBarTimer = null;
+}
+
+function appendPaywall() {
+  const placeholder = document.getElementById('paywall-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderFreeTierCTA();
+  placeholder.replaceWith(tmp.firstElementChild);
+}
+
+
+</script>
+</body></html>

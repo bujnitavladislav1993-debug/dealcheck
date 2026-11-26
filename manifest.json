@@ -2,7 +2,7 @@
   "name": "AI DealCheck",
   "short_name": "AI DealCheck",
   "description": "AI car deal analyzer — find hidden fees before you sign",
-  "start_url": "/",
+  "start_url": "/check",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#c9a84c",
