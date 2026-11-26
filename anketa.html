@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анкета — Подбор авто в США</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0f0f0f;
+    --white: #fafaf8;
+    --accent: #c0392b;
+    --accent-light: #f9ecea;
+    --border: rgba(15,15,15,0.12);
+    --muted: #6b6b6b;
+    --bg: #f5f4f0;
+    --card: #ffffff;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--black);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* HEADER */
+  .hero {
+    background: var(--black);
+    color: var(--white);
+    padding: 3rem 1.5rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 280px; height: 280px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 180px; height: 180px;
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .hero-inner { max-width: 580px; margin: 0 auto; position: relative; z-index: 1; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-bottom: 1.25rem;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(24px, 5vw, 34px);
+    line-height: 1.2;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+  }
+  .hero p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.65);
+    max-width: 460px;
+  }
+  .warning-strip {
+    background: rgba(255,255,255,0.06);
+    border-left: 2px solid var(--accent);
+    padding: 0.75rem 1rem;
+    margin-top: 1.5rem;
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* PROGRESS */
+  .progress-wrap {
+    max-width: 580px; margin: 0 auto;
+    padding: 1.25rem 1.5rem 0;
+  }
+  .progress-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    height: 3px; background: rgba(15,15,15,0.1); border-radius: 2px;
+  }
+  .progress-fill {
+    height: 100%; background: var(--black);
+    border-radius: 2px; transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* FORM */
+  .form-outer {
+    max-width: 580px; margin: 0 auto;
+    padding: 1.25rem 1.5rem 4rem;
+  }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--black); flex-shrink: 0;
+  }
+
+  .field { margin-bottom: 1.25rem; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--black);
+  }
+  .field label .req { color: var(--accent); margin-left: 2px; }
+
+  .field input[type=text],
+  .field input[type=tel],
+  .field input[type=email] {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: 'Manrope', sans-serif;
+    background: #f9f9f7;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--black);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus {
+    border-color: var(--black);
+    box-shadow: 0 0 0 3px rgba(15,15,15,0.08);
+    background: #fff;
+  }
+
+  .hint {
+    font-size: 11px; color: var(--muted);
+    margin-top: 5px; line-height: 1.5;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 0.4rem; }
+  .chip-label {
+    cursor: pointer;
+    display: inline-block;
+  }
+  .chip-label input { display: none; }
+  .chip-text {
+    display: block;
+    padding: 7px 15px;
+    font-size: 13px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    color: var(--muted);
+    background: #f9f9f7;
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .chip-label input:checked + .chip-text {
+    background: var(--black);
+    color: #fff;
+    border-color: var(--black);
+  }
+  .chip-label:active .chip-text { transform: scale(0.97); }
+
+  .err-msg {
+    font-size: 12px; color: var(--accent);
+    margin-top: 6px; display: none;
+    font-weight: 500;
+  }
+  .field.err input { border-color: var(--accent); }
+  .field.err .err-msg { display: block; }
+  .chips-err { font-size: 12px; color: var(--accent); margin-top: 6px; font-weight: 500; display: none; }
+  .chips-err.show { display: block; }
+
+  .conditional-field {
+    display: none; margin-top: 10px;
+  }
+  .conditional-field.show { display: block; }
+
+  /* BUTTONS */
+  .nav {
+    display: flex; gap: 10px; margin-top: 1.5rem;
+  }
+  .btn-back {
+    flex: 1; padding: 13px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500;
+    font-family: 'Manrope', sans-serif;
+    color: var(--muted); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-back:hover { background: rgba(15,15,15,0.04); color: var(--black); }
+
+  .btn-next {
+    flex: 2; padding: 13px;
+    background: var(--black);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 600;
+    font-family: 'Manrope', sans-serif;
+    color: #fff; cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .btn-next:hover { background: #2a2a2a; }
+  .btn-next:active { transform: scale(0.99); }
+
+  /* THANK YOU */
+  .thankyou-wrap {
+    text-align: center;
+    padding: 3rem 1.5rem 4rem;
+    max-width: 580px; margin: 0 auto;
+  }
+  .check-ring {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .check-ring svg { width: 32px; height: 32px; }
+  .thankyou-wrap h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+  .thankyou-wrap p {
+    font-size: 14px; line-height: 1.75;
+    color: var(--muted); max-width: 380px; margin: 0 auto;
+  }
+  .note-box {
+    margin-top: 1.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    font-size: 13px; color: var(--muted); line-height: 1.6;
+    text-align: left;
+  }
+
+  @media (max-width: 420px) {
+    .section-card { padding: 1.1rem; }
+    .hero { padding: 2rem 1.1rem 2rem; }
+    .form-outer { padding: 1rem 1rem 3rem; }
+    .progress-wrap { padding: 1rem 1rem 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="badge">Квалификационная анкета</div>
+    <h1>Подбор и сопровождение покупки авто в США</h1>
+    <p>Помогаю с покупкой, лизингом, финансированием и переговорами по любому бренду. Заполните анкету — я изучу вашу ситуацию и честно скажу, смогу ли реально помочь сэкономить деньги и время.</p>
+    <div class="warning-strip">
+      ⚠️ Из-за большого количества запросов работа начинается только после заполнения анкеты
+    </div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span id="prog-label">Шаг 1 из 4</span>
+    <span id="prog-pct">0%</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+</div>
+
+<div class="form-outer">
+
+  <!-- STEP 1 -->
+  <div class="step active" id="step1">
+    <div class="section-card">
+      <div class="section-head"><span class="dot"></span> Раздел 1 — Контакты</div>
+
+      <div class="field" id="f-name">
+        <label>Имя и фамилия <span class="req">*</span></label>
+        <input type="text" id="i-name" placeholder="Иван Петров" autocomplete="name" />
+        <div class="err-msg">Пожалуйста, введите имя</div>
+      </div>
+
+      <div class="field" id="f-phone">
+        <label>Номер телефона <span class="req">*</span></label>
+        <input type="tel" id="i-phone" placeholder="+1 (555) 000-0000" autocomplete="tel" />
+        <div class="err-msg">Введите номер телефона</div>
+      </div>
+
+      <div class="field" id="f-email">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" id="i-email" placeholder="ivan@gmail.com" autocomplete="email" />
+        <div class="err-msg">Введите корректный email</div>
+      </div>
+
+      <div class="field" id="f-zip">
+        <label>Ваш ZIP code <span class="req">*</span></label>
+        <input type="text" id="i-zip" placeholder="90210" maxlength="5" inputmode="numeric" />
+        <div class="err-msg">Введите ZIP код (5 цифр)</div>
+      </div>
+
+      <div class="field">
+        <label>Как вы нашли меня? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="source" value="Instagram"><span class="chip-text">Instagram</span></label>
+          <label class="chip-label"><input type="radio" name="source" value="TikTok"><span class="chip-text">TikTok</span></label>
+          <label class="chip-label"><input type="radio" name="source" value="YouTube"><span class="chip-text">YouTube</span></label>
+          <label class="chip-label"><input type="radio" name="source" value="Рекомендация"><span class="chip-text">Рекомендация</span></label>
+          <label class="chip-label"><input type="radio" name="source" value="Другое"><span class="chip-text">Другое</span></label>
+        </div>
+        <div class="chips-err" id="err-source">Выберите вариант</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn-next" onclick="next(1)">Продолжить →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step" id="step2">
+    <div class="section-card">
+      <div class="section-head"><span class="dot"></span> Раздел 2 — Автомобиль</div>
+
+      <div class="field" id="f-car">
+        <label>Какой автомобиль вас интересует? <span class="req">*</span></label>
+        <input type="text" id="i-car" placeholder="Toyota Camry SE, BMW X5, Mercedes GLE 450..." />
+        <div class="hint">Марка, модель, комплектация — если знаете</div>
+        <div class="err-msg">Укажите желаемый автомобиль</div>
+      </div>
+
+      <div class="field">
+        <label>Что рассматриваете? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="checkbox" name="type" value="Новая"><span class="chip-text">Новая</span></label>
+          <label class="chip-label"><input type="checkbox" name="type" value="Б/у"><span class="chip-text">Б/у</span></label>
+          <label class="chip-label"><input type="checkbox" name="type" value="Лизинг"><span class="chip-text">Лизинг</span></label>
+          <label class="chip-label"><input type="checkbox" name="type" value="Финансирование"><span class="chip-text">Финансирование</span></label>
+          <label class="chip-label"><input type="checkbox" name="type" value="Lease takeover"><span class="chip-text">Lease takeover</span></label>
+          <label class="chip-label"><input type="checkbox" name="type" value="Открыт к вариантам"><span class="chip-text">Открыт к вариантам</span></label>
+        </div>
+        <div class="chips-err" id="err-type">Выберите хотя бы один вариант</div>
+      </div>
+
+      <div class="field">
+        <label>Ориентировочный monthly payment <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="budget" value="До $500/мес"><span class="chip-text">До $500/мес</span></label>
+          <label class="chip-label"><input type="radio" name="budget" value="$500–700/мес"><span class="chip-text">$500–700/мес</span></label>
+          <label class="chip-label"><input type="radio" name="budget" value="$700–1000/мес"><span class="chip-text">$700–1000/мес</span></label>
+          <label class="chip-label"><input type="radio" name="budget" value="$1000+/мес"><span class="chip-text">$1000+/мес</span></label>
+          <label class="chip-label"><input type="radio" name="budget" value="Пока не знаю"><span class="chip-text">Пока не знаю</span></label>
+        </div>
+        <div class="chips-err" id="err-budget">Выберите вариант</div>
+      </div>
+
+      <div class="field">
+        <label>Полный бюджет (out-the-door, с налогами и сборами) <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="otd" value="До $20,000"><span class="chip-text">До $20k</span></label>
+          <label class="chip-label"><input type="radio" name="otd" value="$20,000–35,000"><span class="chip-text">$20k–35k</span></label>
+          <label class="chip-label"><input type="radio" name="otd" value="$35,000–50,000"><span class="chip-text">$35k–50k</span></label>
+          <label class="chip-label"><input type="radio" name="otd" value="$50,000–75,000"><span class="chip-text">$50k–75k</span></label>
+          <label class="chip-label"><input type="radio" name="otd" value="$75,000+"><span class="chip-text">$75k+</span></label>
+          <label class="chip-label"><input type="radio" name="otd" value="Пока не знаю"><span class="chip-text">Пока не знаю</span></label>
+        </div>
+        <div class="hint">Общая сумма сделки, а не только платёж в месяц</div>
+        <div class="chips-err" id="err-otd">Выберите вариант</div>
+      </div>
+
+      <div class="field" id="f-features">
+        <label>Что для вас важнее всего в этой машине?</label>
+        <input type="text" id="i-features" placeholder="Цвет кузова, цвет салона, опции (panoramic roof, AWD, кожа...)" />
+        <div class="hint">Желаемые цвета (экстерьер / интерьер) и обязательные опции, без которых не рассматриваете</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="back(2)">← Назад</button>
+      <button class="btn-next" onclick="next(2)">Продолжить →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step" id="step3">
+    <div class="section-card">
+      <div class="section-head"><span class="dot"></span> Раздел 3 — Финансы и кредит</div>
+
+      <div class="field" id="f-current-car">
+        <label>Что вы сейчас водите?</label>
+        <input type="text" id="i-current-car" placeholder="Honda Accord 2019 / нет своей машины" />
+        <div class="hint">Текущий автомобиль — марка, модель, год. Если машины нет, так и напишите.</div>
+      </div>
+
+      <div class="field">
+        <label>Планируете сдать эту машину в trade-in? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="tradein" value="Да" onchange="toggleTrade()"><span class="chip-text">Да</span></label>
+          <label class="chip-label"><input type="radio" name="tradein" value="Нет" onchange="toggleTrade()"><span class="chip-text">Нет</span></label>
+          <label class="chip-label"><input type="radio" name="tradein" value="Пока не решил" onchange="toggleTrade()"><span class="chip-text">Пока не решил</span></label>
+        </div>
+        <div class="chips-err" id="err-tradein">Выберите вариант</div>
+      </div>
+
+      <div class="conditional-field" id="trade-block">
+        <div class="field">
+          <label>Сколько миль на машине?</label>
+          <input type="text" id="i-miles" placeholder="Напр. 45,000 миль" inputmode="numeric" />
+        </div>
+
+        <div class="field">
+          <label>На этой машине есть кредит или лизинг?</label>
+          <div class="chips">
+            <label class="chip-label"><input type="radio" name="curloan" value="Нет, выплачена" onchange="toggleCurLoan()"><span class="chip-text">Нет, выплачена</span></label>
+            <label class="chip-label"><input type="radio" name="curloan" value="Авто-кредит (finance)" onchange="toggleCurLoan()"><span class="chip-text">Авто-кредит</span></label>
+            <label class="chip-label"><input type="radio" name="curloan" value="Лизинг (lease)" onchange="toggleCurLoan()"><span class="chip-text">Лизинг</span></label>
+          </div>
+        </div>
+
+        <div class="field conditional-field" id="loan-block">
+          <label>Остаток по кредиту и банк</label>
+          <input type="text" id="i-loan-detail" placeholder="Напр. $18,000, Chase" style="width:100%;" />
+          <div class="hint">Сколько ещё должны и какому банку</div>
+        </div>
+
+        <div class="field conditional-field" id="lease-block">
+          <label>Lease payoff и банк</label>
+          <input type="text" id="i-lease-detail" placeholder="Напр. payoff $32,000, BMW Financial" style="width:100%;" />
+          <div class="hint">Текущая сумма выкупа лизинга и какому банку</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ваш примерный credit score <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="score" value="750+"><span class="chip-text">750+</span></label>
+          <label class="chip-label"><input type="radio" name="score" value="700–749"><span class="chip-text">700–749</span></label>
+          <label class="chip-label"><input type="radio" name="score" value="650–699"><span class="chip-text">650–699</span></label>
+          <label class="chip-label"><input type="radio" name="score" value="600–649"><span class="chip-text">600–649</span></label>
+          <label class="chip-label"><input type="radio" name="score" value="Ниже 600"><span class="chip-text">Ниже 600</span></label>
+          <label class="chip-label"><input type="radio" name="score" value="Нет истории / недавно в США"><span class="chip-text">Нет истории / недавно в США</span></label>
+        </div>
+        <div class="chips-err" id="err-score">Выберите вариант</div>
+      </div>
+
+      <div class="field">
+        <label>Источник дохода <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="checkbox" name="income" value="W2 / работа"><span class="chip-text">W2 / работа</span></label>
+          <label class="chip-label"><input type="checkbox" name="income" value="Self-employed"><span class="chip-text">Self-employed</span></label>
+          <label class="chip-label"><input type="checkbox" name="income" value="Бизнес"><span class="chip-text">Бизнес</span></label>
+          <label class="chip-label"><input type="checkbox" name="income" value="Cash income"><span class="chip-text">Cash income</span></label>
+          <label class="chip-label"><input type="checkbox" name="income" value="Доход из другой страны"><span class="chip-text">Доход из другой страны</span></label>
+          <label class="chip-label"><input type="checkbox" name="income" value="Другое"><span class="chip-text">Другое</span></label>
+        </div>
+        <div class="chips-err" id="err-income">Выберите хотя бы один вариант</div>
+      </div>
+
+      <div class="field">
+        <label>Down payment <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="down" value="$0"><span class="chip-text">$0</span></label>
+          <label class="chip-label"><input type="radio" name="down" value="$1,000–3,000"><span class="chip-text">$1k–3k</span></label>
+          <label class="chip-label"><input type="radio" name="down" value="$3,000–5,000"><span class="chip-text">$3k–5k</span></label>
+          <label class="chip-label"><input type="radio" name="down" value="$5,000+"><span class="chip-text">$5k+</span></label>
+          <label class="chip-label"><input type="radio" name="down" value="Пока не знаю"><span class="chip-text">Пока не знаю</span></label>
+        </div>
+        <div class="chips-err" id="err-down">Выберите вариант</div>
+      </div>
+
+      <div class="field">
+        <label>Сколько авто вы уже брали в кредит или лизинг в США? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="financed" value="Ни одного" onchange="updateChain()"><span class="chip-text">Ни одного</span></label>
+          <label class="chip-label"><input type="radio" name="financed" value="1" onchange="updateChain()"><span class="chip-text">1</span></label>
+          <label class="chip-label"><input type="radio" name="financed" value="2" onchange="updateChain()"><span class="chip-text">2</span></label>
+          <label class="chip-label"><input type="radio" name="financed" value="3+" onchange="updateChain()"><span class="chip-text">3+</span></label>
+        </div>
+        <div class="hint">Помогает понять вашу кредитную историю по авто</div>
+        <div class="chips-err" id="err-financed">Выберите вариант</div>
+      </div>
+
+      <div class="field conditional-field" id="cards-block">
+        <label>Есть ли у вас открытые кредитные карты и как давно?</label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="cards" value="Да, больше 2 лет" onchange="updateChain()"><span class="chip-text">Да, 2+ года</span></label>
+          <label class="chip-label"><input type="radio" name="cards" value="Да, меньше 2 лет" onchange="updateChain()"><span class="chip-text">Да, меньше 2 лет</span></label>
+          <label class="chip-label"><input type="radio" name="cards" value="Нет кредитных карт" onchange="updateChain()"><span class="chip-text">Нет карт</span></label>
+        </div>
+      </div>
+
+      <div class="field conditional-field" id="ssn-block">
+        <label>Как давно у вас есть Social Security Number (SSN)?</label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="ssn" value="Больше 2 лет" onchange="updateChain()"><span class="chip-text">Больше 2 лет</span></label>
+          <label class="chip-label"><input type="radio" name="ssn" value="1–2 года" onchange="updateChain()"><span class="chip-text">1–2 года</span></label>
+          <label class="chip-label"><input type="radio" name="ssn" value="Меньше 1 года" onchange="updateChain()"><span class="chip-text">Меньше 1 года</span></label>
+          <label class="chip-label"><input type="radio" name="ssn" value="Нет SSN / только ITIN" onchange="updateChain()"><span class="chip-text">Нет SSN / ITIN</span></label>
+        </div>
+      </div>
+
+      <div class="field conditional-field" id="cosigner-block">
+        <label>Есть ли у вас co-signer (поручитель с кредитной историей в США)?</label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="cosigner" value="Да"><span class="chip-text">Да</span></label>
+          <label class="chip-label"><input type="radio" name="cosigner" value="Нет"><span class="chip-text">Нет</span></label>
+          <label class="chip-label"><input type="radio" name="cosigner" value="Могу найти"><span class="chip-text">Могу найти</span></label>
+        </div>
+        <div class="hint">При короткой кредитной истории co-signer часто решает вопрос с одобрением</div>
+      </div>
+
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="back(3)">← Назад</button>
+      <button class="btn-next" onclick="next(3)">Продолжить →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step" id="step4">
+    <div class="section-card">
+      <div class="section-head"><span class="dot"></span> Раздел 4 — Чем нужна помощь</div>
+
+      <div class="field">
+        <label>С чем нужна помощь? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="checkbox" name="help" value="Подбор автомобиля"><span class="chip-text">Подбор автомобиля</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Переговоры с дилером"><span class="chip-text">Переговоры с дилером</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Проверка сделки"><span class="chip-text">Проверка сделки</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Анализ лизинга / финансирования"><span class="chip-text">Анализ лизинга</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Помощь с approval"><span class="chip-text">Помощь с approval</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Out of state покупка"><span class="chip-text">Out of state</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Полное сопровождение сделки"><span class="chip-text">Полное сопровождение</span></label>
+          <label class="chip-label"><input type="checkbox" name="help" value="Просто консультация"><span class="chip-text">Просто консультация</span></label>
+        </div>
+        <div class="chips-err" id="err-help">Выберите хотя бы один вариант</div>
+      </div>
+
+      <div class="field">
+        <label>У вас уже есть предложения (quotes) от дилеров? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="quotes" value="Да, есть" onchange="toggleQuotes()"><span class="chip-text">Да, есть</span></label>
+          <label class="chip-label"><input type="radio" name="quotes" value="Нет, ещё не общался" onchange="toggleQuotes()"><span class="chip-text">Нет</span></label>
+          <label class="chip-label"><input type="radio" name="quotes" value="В процессе" onchange="toggleQuotes()"><span class="chip-text">В процессе</span></label>
+        </div>
+        <div class="chips-err" id="err-quotes">Выберите вариант</div>
+        <div class="conditional-field" id="quotes-detail">
+          <input type="text" id="i-quotes" placeholder="Какие дилеры и цифры? (можно прислать скриншот в директ)" style="width:100%;" />
+          <div class="hint">Если есть готовая квота — пришлите фото/скриншот в Instagram или TikTok директ, так я проверю её быстрее.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Когда планируете покупать? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="timing" value="ASAP / прямо сейчас"><span class="chip-text">ASAP / сейчас</span></label>
+          <label class="chip-label"><input type="radio" name="timing" value="В течение 30 дней"><span class="chip-text">В течение 30 дней</span></label>
+          <label class="chip-label"><input type="radio" name="timing" value="2–3 месяца"><span class="chip-text">2–3 месяца</span></label>
+          <label class="chip-label"><input type="radio" name="timing" value="Пока изучаю варианты"><span class="chip-text">Пока изучаю варианты</span></label>
+        </div>
+        <div class="chips-err" id="err-timing">Выберите вариант</div>
+      </div>
+
+      <div class="field">
+        <label>Что вас интересует? <span class="req">*</span></label>
+        <div class="chips">
+          <label class="chip-label"><input type="radio" name="service" value="Платная консультация"><span class="chip-text">Платная консультация</span></label>
+          <label class="chip-label"><input type="radio" name="service" value="Полное сопровождение сделки"><span class="chip-text">Полное сопровождение</span></label>
+          <label class="chip-label"><input type="radio" name="service" value="И то, и другое"><span class="chip-text">И то, и другое</span></label>
+        </div>
+        <div class="chips-err" id="err-service">Выберите вариант</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="back(4)">← Назад</button>
+      <button class="btn-next" onclick="submit()">Отправить анкету ✓</button>
+    </div>
+  </div>
+
+  <!-- THANK YOU -->
+  <div class="step" id="step5">
+    <div class="thankyou-wrap">
+      <div class="check-ring">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 16.5L13 22.5L25 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2>Спасибо за заполнение!</h2>
+      <p>Я рассмотрю вашу анкету и свяжусь с вами в ближайшее время — сообщу, смогу ли помочь, какие есть варианты и какой формат работы подойдёт лучше всего.</p>
+      <div class="note-box">
+        Если не получили ответ в течение 24 часов — напишите в директ в Instagram или TikTok.<br>
+        Работаю по всей территории США.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /form-outer -->
+
+<script>
+  function getVals(name) {
+    return [...document.querySelectorAll('input[name="'+name+'"]:checked')].map(i=>i.value);
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+    document.getElementById('step'+n).classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+    const pct = n < 5 ? Math.round(((n-1)/4)*100) : 100;
+    document.getElementById('prog-fill').style.width = pct+'%';
+    document.getElementById('prog-pct').textContent = pct+'%';
+    document.getElementById('prog-label').textContent = n < 5 ? 'Шаг '+n+' из 4' : 'Анкета отправлена ✓';
+  }
+
+  function setErr(elId, show) {
+    const el = document.getElementById(elId);
+    if (el) { el.classList.toggle('show', show); }
+  }
+
+  function setFieldErr(fId, show) {
+    const el = document.getElementById(fId);
+    if (el) el.classList.toggle('err', show);
+  }
+
+  function next(step) {
+    let ok = true;
+    if (step===1) {
+      const name = document.getElementById('i-name').value.trim();
+      const phone = document.getElementById('i-phone').value.trim();
+      const email = document.getElementById('i-email').value.trim();
+      const zip = document.getElementById('i-zip').value.trim();
+      setFieldErr('f-name', !name); if(!name) ok=false;
+      setFieldErr('f-phone', !phone); if(!phone) ok=false;
+      setFieldErr('f-email', !email||!email.includes('@')); if(!email||!email.includes('@')) ok=false;
+      setFieldErr('f-zip', !zip||zip.length<4); if(!zip||zip.length<4) ok=false;
+      const src = getVals('source').length>0;
+      setErr('err-source', !src); if(!src) ok=false;
+    }
+    if (step===2) {
+      const car = document.getElementById('i-car').value.trim();
+      setFieldErr('f-car', !car); if(!car) ok=false;
+      const type = getVals('type').length>0;
+      setErr('err-type', !type); if(!type) ok=false;
+      const budget = getVals('budget').length>0;
+      setErr('err-budget', !budget); if(!budget) ok=false;
+      const otd = getVals('otd').length>0;
+      setErr('err-otd', !otd); if(!otd) ok=false;
+    }
+    if (step===3) {
+      const score = getVals('score').length>0;
+      setErr('err-score', !score); if(!score) ok=false;
+      const income = getVals('income').length>0;
+      setErr('err-income', !income); if(!income) ok=false;
+      const down = getVals('down').length>0;
+      setErr('err-down', !down); if(!down) ok=false;
+      const financed = getVals('financed').length>0;
+      setErr('err-financed', !financed); if(!financed) ok=false;
+      const tradein = getVals('tradein').length>0;
+      setErr('err-tradein', !tradein); if(!tradein) ok=false;
+    }
+    if (ok) showStep(step+1);
+    else {
+      const firstErr = document.querySelector('#step'+step+' .err, #step'+step+' .chips-err.show');
+      if (firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  }
+
+  function back(step) { showStep(step-1); }
+
+  // Reveal the credit-depth follow-ups only when they actually apply.
+  function updateChain() {
+    const financed = getVals('financed')[0] || '';
+    const showCards = financed === 'Ни одного';
+    document.getElementById('cards-block').classList.toggle('show', showCards);
+
+    const cards = getVals('cards')[0] || '';
+    const showSsn = showCards && cards === 'Нет кредитных карт';
+    document.getElementById('ssn-block').classList.toggle('show', showSsn);
+
+    const ssn = getVals('ssn')[0] || '';
+    // Any SSN history under 2 years → co-signer becomes relevant for approval.
+    const ssnUnder2 = ssn === '1–2 года' || ssn === 'Меньше 1 года' || ssn === 'Нет SSN / только ITIN';
+    const showCosigner = showSsn && ssnUnder2;
+    document.getElementById('cosigner-block').classList.toggle('show', showCosigner);
+  }
+
+  function toggleTrade() {
+    const v = getVals('tradein')[0] || '';
+    const show = v === 'Да' || v === 'Пока не решил';
+    document.getElementById('trade-block').classList.toggle('show', show);
+  }
+
+  function toggleCurLoan() {
+    const v = getVals('curloan')[0] || '';
+    document.getElementById('loan-block').classList.toggle('show', v === 'Авто-кредит (finance)');
+    document.getElementById('lease-block').classList.toggle('show', v === 'Лизинг (lease)');
+  }
+
+  function toggleQuotes() {
+    const v = getVals('quotes')[0] || '';
+    document.getElementById('quotes-detail').classList.toggle('show', v === 'Да, есть' || v === 'В процессе');
+  }
+
+  function submit() {
+    let ok = true;
+    const help = getVals('help').length>0;
+    setErr('err-help', !help); if(!help) ok=false;
+    const quotes = getVals('quotes').length>0;
+    setErr('err-quotes', !quotes); if(!quotes) ok=false;
+    const timing = getVals('timing').length>0;
+    setErr('err-timing', !timing); if(!timing) ok=false;
+    const service = getVals('service').length>0;
+    setErr('err-service', !service); if(!service) ok=false;
+    if (!ok) {
+      const firstErr = document.querySelector('#step4 .chips-err.show');
+      if (firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+
+    const btn = document.querySelector('#step4 .btn-next');
+    btn.textContent = 'Отправка...';
+    btn.disabled = true;
+
+    const val = id => (document.getElementById(id)?.value || '').trim();
+    const data = {
+      access_key:          'd6cf2b31-5e86-4cd9-9237-595c2f4080ac',
+      from_name:           'Анкета — подбор авто',
+      'Имя':               val('i-name'),
+      'Телефон':           val('i-phone'),
+      'Email':             val('i-email'),
+      'ZIP':               val('i-zip'),
+      'Источник':          getVals('source').join(', '),
+      'Автомобиль':        val('i-car'),
+      'Тип':               getVals('type').join(', '),
+      'Бюджет':            getVals('budget').join(', '),
+      'Полный бюджет (OTD)': getVals('otd').join(', '),
+      'Важные опции/цвета': val('i-features'),
+      'Сейчас водит':      val('i-current-car'),
+      'Credit score':      getVals('score').join(', '),
+      'Доход':             getVals('income').join(', '),
+      'Down payment':      getVals('down').join(', '),
+      'Авто в кредит/лизинг ранее': getVals('financed').join(', '),
+      'Кредитные карты':   getVals('cards').join(', '),
+      'SSN':               getVals('ssn').join(', '),
+      'Co-signer':         getVals('cosigner').join(', '),
+      'Trade-in план':     getVals('tradein').join(', '),
+      'Пробег (мили)':     val('i-miles'),
+      'Кредит/лизинг на машине': getVals('curloan').join(', '),
+      'Кредит — остаток и банк': val('i-loan-detail'),
+      'Лизинг — payoff и банк': val('i-lease-detail'),
+      'Помощь':            getVals('help').join(', '),
+      'Есть quotes от дилеров': getVals('quotes').join(', '),
+      'Quotes детали':     val('i-quotes'),
+      'Сроки':             getVals('timing').join(', '),
+      'Услуга':            getVals('service').join(', '),
+      'subject':           'Новая анкета: ' + (val('i-name') || '—') + ' (' + (getVals('score').join(', ') || 'score ?') + ')',
+    };
+
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(r => {
+      if (r.ok) { showStep(5); }
+      else { btn.textContent = 'Ошибка — попробуйте ещё раз'; btn.disabled = false; }
+    })
+    .catch(() => { btn.textContent = 'Ошибка соединения — попробуйте ещё раз'; btn.disabled = false; });
+  }
+
+  showStep(1);
+</script>
+</body>
+</html>
