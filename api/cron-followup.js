@@ -144,7 +144,7 @@ function step1Html(isRu, firstName, dealLine) {
 </p>
 <p>Или напиши/позвони напрямую — отвечу лично:</p>
 <p style="text-align:center;margin:20px 0">
-<a href="https://www.instagram.com/pereprodavec_vlad/" style="background:#E1306C;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;margin:4px">📱 @pereprodavec_vlad</a>
+<a href="https://www.instagram.com/dealcheck_by_vlad" style="background:#E1306C;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;margin:4px">📱 @dealcheck_by_vlad</a>
 <a href="tel:+19498707365" style="background:#25D366;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;margin:4px">📞 (949) 870-7365</a>
 </p>
 <p>Удачи с машиной 🚗</p>
@@ -164,7 +164,7 @@ function step1Html(isRu, firstName, dealLine) {
 </p>
 <p>Or text/call me directly — I respond personally:</p>
 <p style="text-align:center;margin:20px 0">
-<a href="https://www.instagram.com/pereprodavec_vlad/" style="background:#E1306C;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;margin:4px">📱 @pereprodavec_vlad</a>
+<a href="https://www.instagram.com/dealcheck_by_vlad" style="background:#E1306C;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;margin:4px">📱 @dealcheck_by_vlad</a>
 <a href="tel:+19498707365" style="background:#25D366;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;margin:4px">📞 (949) 870-7365</a>
 </p>
 <p>Good luck with the car 🚗</p>
@@ -185,7 +185,7 @@ function step2Html(isRu, firstName) {
 <p style="text-align:center;margin:28px 0">
 <a href="tel:+19498707365" style="background:#25D366;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">📞 (949) 870-7365 — позвони мне</a>
 </p>
-<p>Или Instagram: <a href="https://www.instagram.com/pereprodavec_vlad/" style="color:#E1306C">@pereprodavec_vlad</a></p>
+<p>Или Instagram: <a href="https://www.instagram.com/dealcheck_by_vlad" style="color:#E1306C">@dealcheck_by_vlad</a></p>
 <p>Спама больше не будет — это правда последнее письмо.</p>
 <p><strong>Влад</strong><br>AI DealCheck</p>
 <hr style="border:none;border-top:1px solid #ddd;margin:24px 0">
@@ -202,7 +202,7 @@ function step2Html(isRu, firstName) {
 <p style="text-align:center;margin:28px 0">
 <a href="tel:+19498707365" style="background:#25D366;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">📞 (949) 870-7365 — call me</a>
 </p>
-<p>Or DM on Instagram: <a href="https://www.instagram.com/pereprodavec_vlad/" style="color:#E1306C">@pereprodavec_vlad</a></p>
+<p>Or DM on Instagram: <a href="https://www.instagram.com/dealcheck_by_vlad" style="color:#E1306C">@dealcheck_by_vlad</a></p>
 <p>No more emails after this. Promise.</p>
 <p><strong>Vlad</strong><br>AI DealCheck</p>
 <hr style="border:none;border-top:1px solid #ddd;margin:24px 0">

@@ -75,6 +75,9 @@
   .hero h1 em{font-style:italic;color:var(--gold-soft)}
   .hero .lede{font-size:clamp(1.05rem,2.2vw,1.3rem);color:var(--muted);margin-top:24px;max-width:56ch}
   .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:36px}
+  .hero-qualify{margin-top:18px;font-size:.95rem}
+  .hero-qualify a{color:var(--gold-soft);font-weight:600;border-bottom:1px solid var(--gold-deep)}
+  .hero-qualify a:hover{color:var(--gold)}
   .stats{display:flex;flex-wrap:wrap;gap:clamp(24px,6vw,64px);margin-top:56px;padding-top:34px;border-top:1px solid var(--line)}
   .stat .n{font-family:var(--serif);font-size:clamp(1.9rem,4vw,2.6rem);color:var(--gold-soft);font-variant-numeric:tabular-nums}
   .stat .l{font-size:.82rem;color:var(--muted);margin-top:2px}
@@ -223,6 +226,7 @@
       <a href="#services" data-i18n="nav_services">Services</a>
       <a href="#why" data-i18n="nav_why">Why DealCheck</a>
       <a href="/apply" data-i18n="nav_apply">Credit app</a>
+      <a href="/anketa" data-i18n="nav_qualify">Qualify</a>
       <a href="#contact" data-i18n="nav_contact">Contact</a>
     </nav>
     <div class="nav-right">
@@ -244,6 +248,7 @@
       <a href="#contact" class="btn btn-gold" data-i18n="hero_cta1">Find my car</a>
       <a href="#how" class="btn btn-ghost" data-i18n="hero_cta2">See how it works</a>
     </div>
+    <p class="hero-qualify"><a href="/anketa" data-i18n="hero_qualify">Serious about buying soon? Qualify in 2 minutes →</a></p>
     <div class="stats">
       <div class="stat"><div class="n" data-i18n="hero_s1n">Free</div><div class="l" data-i18n="hero_s1l">Deal check, no strings</div></div>
       <div class="stat"><div class="n" data-i18n="hero_s2n">10+ yrs</div><div class="l" data-i18n="hero_s2l">Dealership experience</div></div>
@@ -384,6 +389,7 @@
       <div class="reach">
         <div class="row"><span>✆</span><span class="copyable" data-copy="(949) 870-7365">(949) 870-7365</span></div>
         <div class="row"><span>✉</span><span class="copyable" data-copy="carswithvlad1@gmail.com">carswithvlad1@gmail.com</span></div>
+        <div class="row"><span>✎</span><a href="/anketa" data-i18n="reach_qualify">Qualify — 2-minute questionnaire</a></div>
         <div class="row"><span>✈</span><a href="https://t.me/+aRz3J3WTfYY1Njgx" target="_blank" rel="noopener" data-i18n="reach_tg">Telegram — daily deals</a></div>
         <div class="row"><span>◎</span><a href="https://instagram.com/dealcheck_by_vlad" target="_blank" rel="noopener">Instagram @dealcheck_by_vlad</a></div>
         <div class="row"><span>♪</span><a href="https://www.tiktok.com/@dealcheck_by_vlad" target="_blank" rel="noopener">TikTok @dealcheck_by_vlad</a></div>
@@ -428,6 +434,7 @@
         <a href="#services" data-i18n="nav_services">Services</a>
         <a href="#why" data-i18n="nav_why">Why DealCheck</a>
         <a href="/apply" data-i18n="nav_apply">Credit app</a>
+        <a href="/anketa" data-i18n="nav_qualify">Qualify</a>
         <a href="#contact" data-i18n="nav_contact">Contact</a>
       </div>
       <div>
@@ -453,6 +460,9 @@
     brand_sub:"Автоброкер",
     nav_how:"Как это работает", nav_services:"Услуги", nav_why:"Почему DealCheck", nav_apply:"Кредитная заявка", nav_contact:"Контакты", nav_cta:"Начать",
     svc4_cta:"Заполнить кредитную заявку →",
+    nav_qualify:"Анкета",
+    hero_qualify:"Планируете покупку в ближайшее время? Заполните анкету за 2 минуты →",
+    reach_qualify:"Анкета — подбор авто (2 минуты)",
     hero_eyebrow:"Умный способ купить машину",
     hero_h1:"Покупайте умно. <em>Без поездок в салон.</em>",
     hero_lede:"Мы найдём нужную машину, выторгуем реальную цену и доставим её к вашей двери — новую, в лизинг или с пробегом. Вам не нужно ехать к дилеру.",

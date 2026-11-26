@@ -874,8 +874,10 @@
 
 <!-- FOOTER -->
 <footer>
-  <strong style="color:var(--text)">AI DealCheck</strong> · 10+ лет в автоиндустрии США<br>
-  <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" style="color:var(--accent);text-decoration:none">pereprodavec_vlad</a> · Консультации:
+  <a href="/" style="color:var(--text);text-decoration:none"><strong>DealCheck</strong></a> · Auto Brokerage · 10+ лет в автоиндустрии США<br>
+  <a href="/anketa" style="color:var(--accent);text-decoration:none;font-weight:600">Анкета — подбор авто (2 минуты)</a> ·
+  <a href="/apply" style="color:var(--accent);text-decoration:none">Кредитная заявка</a> ·
+  <a href="https://www.instagram.com/dealcheck_by_vlad/" target="_blank" style="color:var(--accent);text-decoration:none">@dealcheck_by_vlad</a> · Консультации:
   <a href="https://calendly.com/cars_with_vlad/new-meeting-2" target="_blank" style="color:var(--accent);text-decoration:none">Calendly</a><br><br>
   <span>© 2026 AI DealCheck. Все права защищены.</span>
 </footer>
@@ -1094,7 +1096,7 @@ function renderUnlockedAnalysis(body, diagnosis) {
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">
         ${ru ? 'Влад лично разберёт вашу сделку и скажет что делать дальше.' : 'Vlad will personally review your deal and tell you exactly what to do.'}
       </div>
-      <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank"
+      <a href="https://www.instagram.com/dealcheck_by_vlad" target="_blank"
         style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--red);color:#fff;font-weight:700;font-family:Syne,sans-serif;font-size:13px;border-radius:var(--radius);text-decoration:none;margin-right:8px">
         📱 Instagram DM
       </a>
@@ -1200,8 +1202,8 @@ window.addEventListener("DOMContentLoaded", function() {
 
 // ── Contact links — update Telegram handle if different ──────────────────────
 const CONTACT = {
-  instagram: 'https://www.instagram.com/pereprodavec_vlad/',
-  telegram:  'https://t.me/pereprodavec_usa',
+  instagram: 'https://www.instagram.com/dealcheck_by_vlad',
+  telegram:  'https://t.me/dealcheck_by_vlad',
   calendly:  'https://calendly.com/cars_with_vlad/new-meeting-2',
 };
 
@@ -1871,8 +1873,8 @@ async function unlockLeadInline() {
       <div class="paywall-head" style="color:var(--red)">${ru ? '⚠️ Не получилось открыть разбор' : "⚠️ Couldn't unlock the breakdown"}</div>
       <div class="paywall-sub" style="padding-bottom:1.25rem">
         ${ru
-          ? 'Твои данные сохранились — напиши Владу в Instagram @pereprodavec_vlad или позвони (949) 870-7365, он откроет разбор лично.'
-          : 'Your info is saved — DM Vlad on Instagram @pereprodavec_vlad or call (949) 870-7365 to get the breakdown personally.'}
+          ? 'Твои данные сохранились — напиши Владу в Instagram @dealcheck_by_vlad или позвони (949) 870-7365, он откроет разбор лично.'
+          : 'Your info is saved — DM Vlad on Instagram @dealcheck_by_vlad or call (949) 870-7365 to get the breakdown personally.'}
       </div>`;
   }
 }
@@ -1895,7 +1897,7 @@ function renderLeadTierCTA() {
         : "This is complex, and the dealer does it daily. 10+ years inside Mercedes taught me exactly what to push on. I'll personally handle your deal: call the dealer, negotiate the money factor, verify every line of the contract before you sign. FREE to you — the dealer pays me."}
     </div>
     <div style="display:flex;gap:8px;padding:0 1.25rem 0.75rem;flex-wrap:wrap">
-      <a href="https://www.instagram.com/pereprodavec_vlad/" target="_blank" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#E1306C;color:#fff;border-color:#E1306C">
+      <a href="https://www.instagram.com/dealcheck_by_vlad" target="_blank" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#E1306C;color:#fff;border-color:#E1306C">
         📱 ${ru ? 'Написать в Instagram' : 'DM on Instagram'}
       </a>
       <a href="tel:+19498707365" class="pay-btn" style="flex:1;min-width:140px;justify-content:center;background:#25D366;color:#fff;border-color:#25D366">
@@ -2475,7 +2477,7 @@ async function runFullAnalysis() {
       <div class="result-card">
         <div class="print-header" style="display:none">
           <strong style="font-size:1.1rem">AI DealCheck</strong> &nbsp;·&nbsp; aidealcheck.com<br>
-          <span style="font-size:12px;color:#555">@pereprodavec_vlad &nbsp;·&nbsp; calendly.com/cars_with_vlad &nbsp;·&nbsp; ${new Date().toLocaleDateString()}</span>
+          <span style="font-size:12px;color:#555">@dealcheck_by_vlad &nbsp;·&nbsp; calendly.com/cars_with_vlad &nbsp;·&nbsp; ${new Date().toLocaleDateString()}</span>
         </div>
         <div class="result-header">
           <span class="verdict-badge ${vClass}">${vText}</span>
@@ -2610,7 +2612,7 @@ function shareAnalysis(verdict, vClass, btn) {
         `🚗 Проверь свою сделку БЕСПЛАТНО:`,
         `aidealcheck.com`,
         ``,
-        `@pereprodavec_vlad #DealCheck #авто #переговоры`
+        `@dealcheck_by_vlad #DealCheck #авто #переговоры`
       ].filter(Boolean).join('\n')
     : [
         `${emoji} Just had my car deal checked by AI DealCheck`,
@@ -2623,7 +2625,7 @@ function shareAnalysis(verdict, vClass, btn) {
         `🚗 Check YOUR deal FREE:`,
         `aidealcheck.com`,
         ``,
-        `@pereprodavec_vlad #DealCheck #CarBuying #CarDeals`
+        `@dealcheck_by_vlad #DealCheck #CarBuying #CarDeals`
       ].filter(Boolean).join('\n');
 
   // Capture btn before async — event.target is unavailable inside .then()
@@ -3030,8 +3032,8 @@ function shareWithRef(btn) {
   const code = getRefCode();
   const url  = `https://aidealcheck.com/check?ref=${code}`;
   const text = ru
-    ? `🚗 Проверяй автосделки с AI — бесплатно!\n${url}\n\nПо моей ссылке получишь бонусный анализ 🎁\n@pereprodavec_vlad`
-    : `🚗 Check your car deal with AI — free!\n${url}\n\nUse my link for a bonus free analysis 🎁\n@pereprodavec_vlad`;
+    ? `🚗 Проверяй автосделки с AI — бесплатно!\n${url}\n\nПо моей ссылке получишь бонусный анализ 🎁\n@dealcheck_by_vlad`
+    : `🚗 Check your car deal with AI — free!\n${url}\n\nUse my link for a bonus free analysis 🎁\n@dealcheck_by_vlad`;
   navigator.clipboard.writeText(text).then(() => {
     const orig = btn.innerHTML;
     btn.innerHTML = ru ? '✓ Ссылка скопирована!' : '✓ Link copied!';

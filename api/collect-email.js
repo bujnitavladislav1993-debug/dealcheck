@@ -195,9 +195,9 @@ export default async function handler(req, res) {
   <p style="color:#aaa;line-height:1.7;margin-bottom:24px">
     Если сделка оказалась сложной — <strong style="color:#f0f0f0">напишите мне напрямую</strong>. 10+ лет в автобизнесе США, помогу выторговать лучшие условия.
   </p>
-  <a href="https://www.instagram.com/pereprodavec_vlad/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
+  <a href="https://www.instagram.com/dealcheck_by_vlad" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
   <a href="tel:+19498707365" style="display:inline-block;padding:12px 24px;background:#25D366;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">📞 (949) 870-7365</a>
-  <p style="color:#555;font-size:12px;margin-top:32px">Влад · IG @pereprodavec_vlad · (949) 870-7365</p>
+  <p style="color:#555;font-size:12px;margin-top:32px">Влад · IG @dealcheck_by_vlad · (949) 870-7365</p>
 </div>` : `
 <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0a0a0a;color:#f0f0f0;padding:32px;border-radius:12px">
   <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">AI DealCheck</div>
@@ -208,9 +208,9 @@ export default async function handler(req, res) {
   <p style="color:#aaa;line-height:1.7;margin-bottom:24px">
     If the deal looked complicated or you found red flags — <strong style="color:#f0f0f0">reach out directly</strong>. I have 10+ years inside US dealerships and can negotiate on your behalf.
   </p>
-  <a href="https://www.instagram.com/pereprodavec_vlad/" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
+  <a href="https://www.instagram.com/dealcheck_by_vlad" style="display:inline-block;padding:12px 24px;background:#c9a84c;color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-right:8px">📱 Instagram</a>
   <a href="tel:+19498707365" style="display:inline-block;padding:12px 24px;background:#25D366;color:#fff;font-weight:700;border-radius:8px;text-decoration:none">📞 (949) 870-7365</a>
-  <p style="color:#555;font-size:12px;margin-top:32px">Vlad · IG @pereprodavec_vlad · (949) 870-7365</p>
+  <p style="color:#555;font-size:12px;margin-top:32px">Vlad · IG @dealcheck_by_vlad · (949) 870-7365</p>
 </div>`;
 
   // Prefer Brevo (domain-authenticated for aidealcheck.com). Fire-and-forget.
