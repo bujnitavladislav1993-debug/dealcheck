@@ -56,6 +56,9 @@
   }
   .submit-btn:hover { background: #0C447C; }
   .submit-btn:disabled { opacity: .7; cursor: wait; }
+  fieldset.prev { border: 0; padding: 0; margin: 0; min-width: 0; }
+  .prev .section-header { border-left-color: #B7791F; background: #FBF6EA; margin-top: .5rem; }
+  .hint { font-size: 12px; color: #888780; margin: -4px 0 8px; line-height: 1.5; }
   .err-msg { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: #FCEBEB; color: #A32D2D; font-size: 13px; line-height: 1.5; }
   .secure { margin-top: 14px; text-align: center; font-size: 12px; color: #888780; }
   @media (max-width: 520px) {
@@ -186,6 +189,41 @@
         <input type="number" name="address-months" placeholder="0" min="0" max="11" required>
       </div>
     </div>
+
+    <fieldset class="prev" id="prev-address" disabled hidden>
+      <div class="section-header">Previous Address <span class="ru">/ Предыдущий адрес</span></div>
+      <p class="hint">Required because you've been at your current address less than 2 years. / Обязательно, т.к. по текущему адресу вы живёте менее 2 лет.</p>
+      <div class="field-grid" style="gap:12px">
+        <div class="field">
+          <label>Previous Address / <span class="ru">Предыдущий адрес</span><span class="req">*</span></label>
+          <input type="text" name="prev-address" placeholder="123 Main St" required>
+        </div>
+        <div class="field-grid col-3">
+          <div class="field">
+            <label>Zip / <span class="ru">Индекс</span><span class="req">*</span></label>
+            <input type="text" name="prev-zip" id="prev-zip" placeholder="90001" maxlength="5" inputmode="numeric" required>
+          </div>
+          <div class="field">
+            <label>City / <span class="ru">Город</span><span class="req">*</span></label>
+            <input type="text" name="prev-city" placeholder="Los Angeles" required>
+          </div>
+          <div class="field">
+            <label>State / <span class="ru">Штат</span><span class="req">*</span></label>
+            <select name="prev-state" id="prev-state" required><option value="">— State / Штат —</option></select>
+          </div>
+        </div>
+        <div class="field-grid col-2">
+          <div class="field">
+            <label>Years at Previous Address / <span class="ru">Лет по пред. адресу</span><span class="req">*</span></label>
+            <input type="number" name="prev-address-years" placeholder="0" min="0" required>
+          </div>
+          <div class="field">
+            <label>Months / <span class="ru">Месяцев</span><span class="req">*</span></label>
+            <input type="number" name="prev-address-months" placeholder="0" min="0" max="11" required>
+          </div>
+        </div>
+      </div>
+    </fieldset>
   </div>
 
   <div class="section-header">Employment Information <span class="ru">/ Информация о занятости</span></div>
@@ -200,6 +238,10 @@
         <label>Occupation / <span class="ru">Должность</span><span class="req">*</span></label>
         <input type="text" name="occupation" placeholder="Job title" autocomplete="organization-title" required>
       </div>
+    </div>
+    <div class="field">
+      <label>Employer Address / <span class="ru">Адрес работодателя</span><span class="req">*</span></label>
+      <input type="text" name="employer-address" placeholder="Street, City, State / Улица, город, штат" required>
     </div>
     <div class="field-grid col-4">
       <div class="field">
@@ -229,6 +271,41 @@
         <input type="text" name="other-income-source" placeholder="e.g. Rental / Аренда">
       </div>
     </div>
+
+    <fieldset class="prev" id="prev-employer" disabled hidden>
+      <div class="section-header">Previous Employer <span class="ru">/ Предыдущий работодатель</span></div>
+      <p class="hint">Required because you've been with your current employer less than 2 years. / Обязательно, т.к. у текущего работодателя вы менее 2 лет.</p>
+      <div class="field-grid" style="gap:12px">
+        <div class="field-grid col-2">
+          <div class="field">
+            <label>Previous Employer / <span class="ru">Предыдущий работодатель</span><span class="req">*</span></label>
+            <input type="text" name="prev-employer" placeholder="Company name" required>
+          </div>
+          <div class="field">
+            <label>Occupation / <span class="ru">Должность</span><span class="req">*</span></label>
+            <input type="text" name="prev-occupation" placeholder="Job title" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Employer Address / <span class="ru">Адрес работодателя</span></label>
+          <input type="text" name="prev-employer-address" placeholder="Street, City, State / Улица, город, штат">
+        </div>
+        <div class="field-grid col-3">
+          <div class="field">
+            <label>Years There / <span class="ru">Лет</span><span class="req">*</span></label>
+            <input type="number" name="prev-employer-years" placeholder="0" min="0" required>
+          </div>
+          <div class="field">
+            <label>Months / <span class="ru">Месяцев</span><span class="req">*</span></label>
+            <input type="number" name="prev-employer-months" placeholder="0" min="0" max="11" required>
+          </div>
+          <div class="field">
+            <label>Work Phone / <span class="ru">Рабочий телефон</span></label>
+            <input type="tel" name="prev-work-phone" id="prev-work-phone" placeholder="(555) 000-0000">
+          </div>
+        </div>
+      </div>
+    </fieldset>
   </div>
 
   <button type="button" class="coapplicant-btn" id="coapplicant-btn" onclick="toggleCoApplicant()">+ Add Co-Applicant / Добавить созаёмщика</button>
@@ -370,6 +447,32 @@ function toggleCoApplicant() {
     phoneMask('co-work-phone', false);
   }
 }
+
+// ── "Previous" sections: shown only when < 2 years at current address/employer
+// A disabled+hidden fieldset is neither validated nor submitted, so the extra
+// fields only count when they actually apply.
+function syncPrev(fsId, yName, mName) {
+  const fs  = document.getElementById(fsId);
+  const yEl = document.querySelector(`[name="${yName}"]`);
+  const mEl = document.querySelector(`[name="${mName}"]`);
+  const touched = yEl.value !== '' || mEl.value !== '';
+  const months  = (parseInt(yEl.value, 10) || 0) * 12 + (parseInt(mEl.value, 10) || 0);
+  const show = touched && months < 24;
+  fs.disabled = !show;
+  fs.hidden   = !show;
+}
+['address-years', 'address-months'].forEach(n =>
+  document.querySelector(`[name="${n}"]`).addEventListener('input', () => syncPrev('prev-address', 'address-years', 'address-months')));
+['employer-years', 'employer-months'].forEach(n =>
+  document.querySelector(`[name="${n}"]`).addEventListener('input', () => syncPrev('prev-employer', 'employer-years', 'employer-months')));
+
+// Previous-address state list mirrors the main one.
+(function () {
+  const src = document.querySelector('select[name="state"]'), dst = document.getElementById('prev-state');
+  Array.from(src.options).slice(1).forEach(o => dst.add(new Option(o.text, o.value)));
+})();
+maskField('prev-zip', v => v.replace(/\D/g,'').slice(0,5), v => v.length === 5, 'Zip must be 5 digits / Индекс должен содержать 5 цифр');
+phoneMask('prev-work-phone', false);
 
 // ── Submit ──────────────────────────────────────────────────────────────────
 document.getElementById('credit-form').addEventListener('submit', function(e) {
