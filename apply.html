@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Credit Application — DealCheck</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a18; padding: 0 1rem 2rem; }
+  .topbar { max-width: 700px; margin: 0 auto; padding: 18px 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .topbar a.brand { text-decoration: none; color: #1a1a18; font-weight: 600; font-size: 17px; letter-spacing: .01em; }
+  .topbar a.brand b { color: #9c7d3f; font-weight: 600; }
+  .topbar a.brand small { display: block; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #888780; font-weight: 500; margin-top: 2px; }
+  .topbar a.back { font-size: 13px; color: #5f5e5a; text-decoration: none; }
+  .topbar a.back:hover { color: #1a1a18; }
+  .form-wrap { max-width: 700px; margin: 0 auto; background: #fff; border-radius: 12px; border: 0.5px solid #d3d1c7; padding: 2rem; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 0.25rem; }
+  h1 span { color: #888780; font-weight: 400; }
+  .subtitle { font-size: 13px; color: #888780; margin-bottom: 1.5rem; }
+  .section-header { font-size: 14px; font-weight: 500; color: #1a1a18; padding: 8px 12px; background: #f1efe8; border-radius: 8px; margin: 1.5rem 0 1rem; border-left: 3px solid #378ADD; }
+  .section-header span.ru { color: #888780; font-weight: 400; }
+  .field-grid { display: grid; gap: 12px; }
+  .col-2 { grid-template-columns: 1fr 1fr; }
+  .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .col-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; font-weight: 500; color: #5f5e5a; line-height: 1.3; }
+  .field label .ru { color: #888780; font-weight: 400; }
+  .field label .req { color: #E24B4A; margin-left: 2px; }
+  .field input, .field select {
+    width: 100%; height: 36px; padding: 0 10px; font-size: 14px;
+    font-family: inherit; color: #1a1a18; background: #fff;
+    border: 0.5px solid #b4b2a9; border-radius: 8px; outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: #378ADD; box-shadow: 0 0 0 2px rgba(55,138,221,0.15); }
+  .field input:invalid:not(:placeholder-shown):not(:focus) { border-color: #E24B4A; }
+  .agree-box {
+    background: #f1efe8; border-radius: 12px; border: 0.5px solid #d3d1c7;
+    padding: 1rem 1.25rem; margin-top: 1.5rem; font-size: 12px; color: #5f5e5a; line-height: 1.6;
+  }
+  .agree-box .ru { color: #888780; font-style: italic; display: block; margin-top: 6px; }
+  .agree-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 1rem; }
+  .agree-row input[type=checkbox] { margin-top: 2px; flex-shrink: 0; }
+  .agree-row label { font-size: 13px; color: #1a1a18; }
+  .coapplicant-btn {
+    margin-top: 1rem; width: 100%; height: 40px; background: #fff; color: #1a1a18;
+    border: 0.5px solid #b4b2a9; border-radius: 8px; font-size: 14px;
+    font-family: inherit; cursor: pointer;
+  }
+  .coapplicant-btn:hover { background: #f1efe8; }
+  .submit-btn {
+    margin-top: 1.5rem; width: 100%; height: 44px; background: #185FA5; color: #E6F1FB;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 500;
+    font-family: inherit; cursor: pointer;
+  }
+  .submit-btn:hover { background: #0C447C; }
+  .submit-btn:disabled { opacity: .7; cursor: wait; }
+  .err-msg { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: #FCEBEB; color: #A32D2D; font-size: 13px; line-height: 1.5; }
+  .secure { margin-top: 14px; text-align: center; font-size: 12px; color: #888780; }
+  @media (max-width: 520px) {
+    .col-2, .col-3, .col-4 { grid-template-columns: 1fr; }
+    .form-wrap { padding: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="/">Deal<b>Check</b><small>Auto Brokerage</small></a>
+  <a class="back" href="/">← Back to site / На сайт</a>
+</div>
+<div class="form-wrap">
+  <h1>Credit Application <span>/ Кредитная заявка</span></h1>
+  <p class="subtitle">Fields marked <span style="color:#E24B4A">*</span> are required &nbsp;/&nbsp; Поля со <span style="color:#E24B4A">*</span> обязательны для заполнения</p>
+
+  <form id="credit-form">
+
+  <div class="section-header">Personal Information <span class="ru">/ Личная информация</span></div>
+
+  <div class="field-grid col-3">
+    <div class="field">
+      <label>First Name / <span class="ru">Имя</span><span class="req">*</span></label>
+      <input type="text" name="first-name" placeholder="John / Иван" autocomplete="given-name" required>
+    </div>
+    <div class="field">
+      <label>MI / <span class="ru">Отчество (инициал)</span></label>
+      <input type="text" name="middle-initial" placeholder="A." maxlength="3" autocomplete="additional-name">
+    </div>
+    <div class="field">
+      <label>Last Name / <span class="ru">Фамилия</span><span class="req">*</span></label>
+      <input type="text" name="last-name" placeholder="Smith / Смит" autocomplete="family-name" required>
+    </div>
+  </div>
+
+  <div class="field-grid col-2" style="margin-top:12px">
+    <div class="field">
+      <label>SSN / <span class="ru">Номер соц. страхования</span><span class="req">*</span></label>
+      <input type="text" name="ssn" id="ssn" placeholder="XXX-XX-XXXX" maxlength="11" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <div class="field">
+      <label>DOB / <span class="ru">Дата рождения</span><span class="req">*</span></label>
+      <input type="text" name="dob" id="dob" placeholder="MM/DD/YYYY" maxlength="10" inputmode="numeric" autocomplete="bday" required>
+    </div>
+  </div>
+
+  <div class="field-grid col-2" style="margin-top:12px">
+    <div class="field">
+      <label>Suffix / <span class="ru">Суффикс</span></label>
+      <select name="suffix">
+        <option value="">— Select / Выбрать —</option>
+        <option>Jr.</option><option>Sr.</option><option>II</option><option>III</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section-header">Residential Information <span class="ru">/ Информация о месте проживания</span></div>
+
+  <div class="field-grid" style="gap:12px">
+    <div class="field">
+      <label>Physical Address / <span class="ru">Адрес проживания</span><span class="req">*</span></label>
+      <input type="text" name="address" placeholder="123 Main St" autocomplete="street-address" required>
+    </div>
+    <div class="field-grid col-3">
+      <div class="field">
+        <label>Zip / <span class="ru">Почтовый индекс</span><span class="req">*</span></label>
+        <input type="text" name="zip" id="zip" placeholder="90001" maxlength="5" inputmode="numeric" autocomplete="postal-code" required>
+      </div>
+      <div class="field">
+        <label>City / <span class="ru">Город</span><span class="req">*</span></label>
+        <input type="text" name="city" placeholder="Los Angeles" autocomplete="address-level2" required>
+      </div>
+      <div class="field">
+        <label>State / <span class="ru">Штат</span><span class="req">*</span></label>
+        <select name="state" autocomplete="address-level1" required>
+          <option value="">— State / Штат —</option>
+          <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+          <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+          <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+          <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+          <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+          <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+          <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+          <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+          <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+          <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+          <option>SD</option><option>TN</option><option>TX</option><option>UT</option>
+          <option>VT</option><option>VA</option><option>WA</option><option>WV</option>
+          <option>WI</option><option>WY</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-grid col-2">
+      <div class="field">
+        <label>Home Phone / <span class="ru">Домашний телефон</span></label>
+        <input type="tel" name="home-phone" id="home-phone" placeholder="(555) 000-0000" autocomplete="home tel">
+      </div>
+      <div class="field">
+        <label>Cell Phone / <span class="ru">Мобильный телефон</span><span class="req">*</span></label>
+        <input type="tel" name="cell-phone" id="cell-phone" placeholder="(555) 000-0000" autocomplete="mobile tel" required>
+      </div>
+    </div>
+    <div class="field">
+      <label>E-Mail Address / <span class="ru">Электронная почта</span><span class="req">*</span></label>
+      <input type="email" name="email" placeholder="email@example.com" autocomplete="email" required>
+    </div>
+    <div class="field-grid col-4">
+      <div class="field">
+        <label>Rent/Own / <span class="ru">Аренда/Собственность</span><span class="req">*</span></label>
+        <select name="rent-own" required>
+          <option value="">— Select —</option>
+          <option>Rent / Аренда</option>
+          <option>Own / Собственность</option>
+          <option>Other / Другое</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Rent/Mortgage / <span class="ru">Ежемес. платёж</span><span class="req">*</span></label>
+        <input type="text" name="rent-amount" placeholder="$0" inputmode="decimal" required>
+      </div>
+      <div class="field">
+        <label>Years at Address / <span class="ru">Лет по адресу</span><span class="req">*</span></label>
+        <input type="number" name="address-years" placeholder="0" min="0" required>
+      </div>
+      <div class="field">
+        <label>Months / <span class="ru">Месяцев</span><span class="req">*</span></label>
+        <input type="number" name="address-months" placeholder="0" min="0" max="11" required>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">Employment Information <span class="ru">/ Информация о занятости</span></div>
+
+  <div class="field-grid" style="gap:12px">
+    <div class="field-grid col-2">
+      <div class="field">
+        <label>Employer Name / <span class="ru">Работодатель</span><span class="req">*</span></label>
+        <input type="text" name="employer" placeholder="Company name" autocomplete="organization" required>
+      </div>
+      <div class="field">
+        <label>Occupation / <span class="ru">Должность</span><span class="req">*</span></label>
+        <input type="text" name="occupation" placeholder="Job title" autocomplete="organization-title" required>
+      </div>
+    </div>
+    <div class="field-grid col-4">
+      <div class="field">
+        <label>Years at Employer / <span class="ru">Лет у работодателя</span><span class="req">*</span></label>
+        <input type="number" name="employer-years" placeholder="0" min="0" required>
+      </div>
+      <div class="field">
+        <label>Months / <span class="ru">Месяцев</span><span class="req">*</span></label>
+        <input type="number" name="employer-months" placeholder="0" min="0" max="11" required>
+      </div>
+      <div class="field">
+        <label>Work Phone / <span class="ru">Рабочий телефон</span><span class="req">*</span></label>
+        <input type="tel" name="work-phone" id="work-phone" placeholder="(555) 000-0000" autocomplete="work tel" required>
+      </div>
+      <div class="field">
+        <label>Monthly Income / <span class="ru">Доход в месяц</span><span class="req">*</span></label>
+        <input type="text" name="monthly-income" placeholder="$0" inputmode="decimal" required>
+      </div>
+    </div>
+    <div class="field-grid col-2">
+      <div class="field">
+        <label>Other Monthly Income / <span class="ru">Доп. доход в месяц</span></label>
+        <input type="text" name="other-income" placeholder="$0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Other Income Source / <span class="ru">Источник доп. дохода</span></label>
+        <input type="text" name="other-income-source" placeholder="e.g. Rental / Аренда">
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="coapplicant-btn" id="coapplicant-btn" onclick="toggleCoApplicant()">+ Add Co-Applicant / Добавить созаёмщика</button>
+
+  <div id="coapplicant-section" style="display:none; margin-top:1rem;">
+    <div class="section-header" style="border-left-color:#D85A30">Co-Applicant Information <span class="ru">/ Информация о созаёмщике</span></div>
+    <div class="field-grid col-3">
+      <div class="field">
+        <label>First Name / <span class="ru">Имя</span><span class="req">*</span></label>
+        <input type="text" name="co-first-name" placeholder="John / Иван">
+      </div>
+      <div class="field">
+        <label>MI / <span class="ru">Отчество (инициал)</span></label>
+        <input type="text" name="co-middle-initial" placeholder="A." maxlength="3">
+      </div>
+      <div class="field">
+        <label>Last Name / <span class="ru">Фамилия</span><span class="req">*</span></label>
+        <input type="text" name="co-last-name" placeholder="Smith / Смит">
+      </div>
+    </div>
+    <div class="field-grid col-2" style="margin-top:12px">
+      <div class="field">
+        <label>SSN / <span class="ru">Номер соц. страхования</span><span class="req">*</span></label>
+        <input type="text" name="co-ssn" id="co-ssn" placeholder="XXX-XX-XXXX" maxlength="11" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>DOB / <span class="ru">Дата рождения</span><span class="req">*</span></label>
+        <input type="text" name="co-dob" id="co-dob" placeholder="MM/DD/YYYY" maxlength="10" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field-grid col-2" style="margin-top:12px">
+      <div class="field">
+        <label>Cell Phone / <span class="ru">Мобильный телефон</span><span class="req">*</span></label>
+        <input type="tel" name="co-cell-phone" id="co-cell-phone" placeholder="(555) 000-0000">
+      </div>
+      <div class="field">
+        <label>E-Mail / <span class="ru">Электронная почта</span></label>
+        <input type="email" name="co-email" placeholder="email@example.com">
+      </div>
+    </div>
+    <div class="section-header" style="border-left-color:#D85A30; margin-top:1rem">Co-Applicant Employment <span class="ru">/ Занятость созаёмщика</span></div>
+    <div class="field-grid col-2">
+      <div class="field">
+        <label>Employer Name / <span class="ru">Работодатель</span><span class="req">*</span></label>
+        <input type="text" name="co-employer" placeholder="Company name">
+      </div>
+      <div class="field">
+        <label>Occupation / <span class="ru">Должность</span><span class="req">*</span></label>
+        <input type="text" name="co-occupation" placeholder="Job title">
+      </div>
+    </div>
+    <div class="field-grid col-2" style="margin-top:12px">
+      <div class="field">
+        <label>Monthly Income / <span class="ru">Доход в месяц</span><span class="req">*</span></label>
+        <input type="text" name="co-monthly-income" placeholder="$0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Work Phone / <span class="ru">Рабочий телефон</span></label>
+        <input type="tel" name="co-work-phone" id="co-work-phone" placeholder="(555) 000-0000">
+      </div>
+    </div>
+    <button type="button" style="margin-top:1rem; background:none; border:none; color:#E24B4A; font-size:13px; cursor:pointer; padding:0;" onclick="toggleCoApplicant()">✕ Remove Co-Applicant / Удалить созаёмщика</button>
+  </div>
+
+  <div class="agree-box">
+    <p>By clicking "I Agree" you confirm that you have read the Privacy Notice and Electronic Signature Disclosure, your name is accurate as entered, and you authorize the dealer to obtain your credit report under the Fair Credit Reporting Act. Any pre-approval is subject to review and acceptance of credit information.</p>
+    <span class="ru">Нажимая «Согласен», вы подтверждаете, что ознакомились с Уведомлением о конфиденциальности и раскрытием электронной подписи, что ваше имя введено верно, и разрешаете дилеру получить ваш кредитный отчёт в соответствии с Законом о достоверной кредитной информации. Любое предварительное одобрение подлежит проверке кредитной информации.</span>
+    <div class="agree-row">
+      <input type="checkbox" id="agree" name="agree" required>
+      <label for="agree">
+        I Agree / <span style="color:#888780">Согласен</span> —
+        First, MI, and Last Name must match exactly as entered above /
+        <span style="color:#888780;font-size:11px">Имя, отчество и фамилия должны точно совпадать с введёнными выше</span>
+        <span style="color:#E24B4A"> *</span>
+      </label>
+    </div>
+  </div>
+
+  <button type="submit" class="submit-btn">Submit Application / Отправить заявку</button>
+  <div class="err-msg" id="err-msg">Couldn't send just now — please try again, or call / text <strong>(949) 870-7365</strong>.<br>Не удалось отправить — попробуйте снова или позвоните / напишите (949) 870-7365.</div>
+  <p class="secure">🔒 Sent securely to DealCheck. / Отправляется напрямую в DealCheck.</p>
+
+  </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+emailjs.init('p9IYye7BwFwBiNNOv');
+
+// ── Masked fields ───────────────────────────────────────────────────────────
+// Validity is recomputed from the CURRENT value on input, change and blur, and
+// cleared whenever the value is valid. Previously an error set on blur was only
+// cleared by the `input` event, so a value filled by browser autofill or paste
+// (which often fire only `change`) kept a stale "must be N digits" error and
+// blocked submit on perfectly correct data.
+function maskField(id, formatter, validator, errMsg) {
+  const el = document.getElementById(id);
+  if (!el || el.dataset.masked) return;   // never double-bind (co-applicant toggle)
+  el.dataset.masked = '1';
+  const run = (report) => {
+    const formatted = formatter(el.value);
+    if (formatted !== el.value) el.value = formatted;
+    if (el.value.length > 0 && !validator(el.value)) {
+      el.setCustomValidity(errMsg);
+      if (report) el.reportValidity();
+    } else {
+      el.setCustomValidity('');
+    }
+  };
+  el.addEventListener('input',  () => run(false));
+  el.addEventListener('change', () => run(false));
+  el.addEventListener('blur',   () => run(true));
+}
+
+const fmtSSN   = v => { v = v.replace(/\D/g,'').slice(0,9); if(v.length>5) return v.slice(0,3)+'-'+v.slice(3,5)+'-'+v.slice(5); if(v.length>3) return v.slice(0,3)+'-'+v.slice(3); return v; };
+const fmtDate  = v => { v = v.replace(/\D/g,'').slice(0,8); if(v.length>4) return v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4); if(v.length>2) return v.slice(0,2)+'/'+v.slice(2); return v; };
+const fmtPhone = v => { v = v.replace(/\D/g,''); if (v.length === 11 && v[0] === '1') v = v.slice(1); v = v.slice(0,10); if(v.length>6) return '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6); if(v.length>3) return '('+v.slice(0,3)+') '+v.slice(3); if(v.length>0) return '('+v; return v; };
+
+maskField('ssn', fmtSSN, v => v.length === 11, 'SSN must be 9 digits / ССН должен содержать 9 цифр');
+maskField('dob', fmtDate, v => v.length === 10, 'Date must be MM/DD/YYYY / Формат даты ММ/ДД/ГГГГ');
+maskField('zip', v => v.replace(/\D/g,'').slice(0,5), v => v.length === 5, 'Zip must be 5 digits / Индекс должен содержать 5 цифр');
+
+function phoneMask(id, required) {
+  maskField(id, fmtPhone, v => !required || v.replace(/\D/g,'').length === 10, 'Phone must be 10 digits / Телефон должен содержать 10 цифр');
+}
+phoneMask('home-phone', false);
+phoneMask('cell-phone', true);
+phoneMask('work-phone', true);
+
+function toggleCoApplicant() {
+  const section = document.getElementById('coapplicant-section');
+  const btn = document.getElementById('coapplicant-btn');
+  const open = section.style.display === 'none';
+  section.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ Remove Co-Applicant / Удалить созаёмщика' : '+ Add Co-Applicant / Добавить созаёмщика';
+  if (open) {
+    maskField('co-ssn', fmtSSN, v => v.length === 11, 'SSN must be 9 digits / ССН должен содержать 9 цифр');
+    maskField('co-dob', fmtDate, v => v.length === 10, 'Date must be MM/DD/YYYY / Формат даты ММ/ДД/ГГГГ');
+    phoneMask('co-cell-phone', false);
+    phoneMask('co-work-phone', false);
+  }
+}
+
+// ── Submit ──────────────────────────────────────────────────────────────────
+document.getElementById('credit-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = e.target;
+  // Re-run every mask once more so autofilled values are formatted + validated
+  // right before the native check, then let the browser report anything left.
+  form.querySelectorAll('[data-masked]').forEach(el => { el.dispatchEvent(new Event('change')); });
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+
+  const btn = form.querySelector('.submit-btn');
+  const err = document.getElementById('err-msg');
+  err.style.display = 'none';
+  btn.textContent = 'Sending... / Отправляем...';
+  btn.disabled = true;
+
+  const data = new FormData(form);
+  let msg = '';
+  data.forEach((val, key) => { if (val) msg += key + ': ' + val + '\n'; });
+
+  emailjs.send('service_5apit64', 'template_u1y3y5e', { message: msg })
+    .then(() => { window.location.href = '/apply-thank-you'; })
+    .catch(() => {
+      err.style.display = 'block';
+      btn.textContent = 'Submit Application / Отправить заявку';
+      btn.disabled = false;
+    });
+});
+</script>
+</body>
+</html>

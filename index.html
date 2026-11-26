@@ -102,6 +102,8 @@
   .card .ic{font-size:1.5rem}
   .card h3{font-size:1.35rem;margin:14px 0 10px}
   .card p{color:var(--muted);font-size:.96rem}
+  .card-link{display:inline-block;margin-top:16px;color:var(--gold-soft);font-weight:600;font-size:.9rem;border-bottom:1px solid var(--gold-deep)}
+  .card-link:hover{color:var(--gold)}
 
   /* why + trust card */
   .why{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(32px,6vw,72px);align-items:center}
@@ -219,6 +221,7 @@
       <a href="#how" data-i18n="nav_how">How it works</a>
       <a href="#services" data-i18n="nav_services">Services</a>
       <a href="#why" data-i18n="nav_why">Why DealCheck</a>
+      <a href="/apply" data-i18n="nav_apply">Credit app</a>
       <a href="#contact" data-i18n="nav_contact">Contact</a>
     </nav>
     <div class="nav-right">
@@ -280,7 +283,7 @@
       <div class="card"><div class="ic">🔑</div><h3 data-i18n="svc1_h">New &amp; lease</h3><p data-i18n="svc1_p">Any new make or model, purchase or lease, sourced and negotiated below what you'd get walking in yourself.</p></div>
       <div class="card"><div class="ic">🚗</div><h3 data-i18n="svc2_h">Pre-owned sourcing</h3><p data-i18n="svc2_p">We find clean, inspected used vehicles that match your spec — not whatever happens to be on one lot.</p></div>
       <div class="card"><div class="ic">💵</div><h3 data-i18n="svc3_h">Sell or trade-in</h3><p data-i18n="svc3_p">Get a real market offer for your current car without the dealer lowball. We handle the payoff and the transfer.</p></div>
-      <div class="card"><div class="ic">📄</div><h3 data-i18n="svc4_h">Financing &amp; credit</h3><p data-i18n="svc4_p">Competitive financing lined up before you sign, plus a simple bilingual credit application you can finish in minutes.</p></div>
+      <div class="card"><div class="ic">📄</div><h3 data-i18n="svc4_h">Financing &amp; credit</h3><p data-i18n="svc4_p">Competitive financing lined up before you sign, plus a simple bilingual credit application you can finish in minutes.</p><a class="card-link" href="/apply" data-i18n="svc4_cta">Start credit application →</a></div>
     </div>
   </div>
 </section>
@@ -423,6 +426,7 @@
         <a href="#how" data-i18n="nav_how">How it works</a>
         <a href="#services" data-i18n="nav_services">Services</a>
         <a href="#why" data-i18n="nav_why">Why DealCheck</a>
+        <a href="/apply" data-i18n="nav_apply">Credit app</a>
         <a href="#contact" data-i18n="nav_contact">Contact</a>
       </div>
       <div>
@@ -446,7 +450,8 @@
   "use strict";
   var RU = {
     brand_sub:"Автоброкер",
-    nav_how:"Как это работает", nav_services:"Услуги", nav_why:"Почему DealCheck", nav_contact:"Контакты", nav_cta:"Начать",
+    nav_how:"Как это работает", nav_services:"Услуги", nav_why:"Почему DealCheck", nav_apply:"Кредитная заявка", nav_contact:"Контакты", nav_cta:"Начать",
+    svc4_cta:"Заполнить кредитную заявку →",
     hero_eyebrow:"Умный способ купить машину",
     hero_h1:"Покупайте умно. <em>Без поездок в салон.</em>",
     hero_lede:"Мы найдём нужную машину, выторгуем реальную цену и доставим её к вашей двери — новую, в лизинг или с пробегом. Вам не нужно ехать к дилеру.",
