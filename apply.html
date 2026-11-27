@@ -461,10 +461,16 @@ function syncPrev(fsId, yName, mName) {
   fs.disabled = !show;
   fs.hidden   = !show;
 }
-['address-years', 'address-months'].forEach(n =>
-  document.querySelector(`[name="${n}"]`).addEventListener('input', () => syncPrev('prev-address', 'address-years', 'address-months')));
-['employer-years', 'employer-months'].forEach(n =>
-  document.querySelector(`[name="${n}"]`).addEventListener('input', () => syncPrev('prev-employer', 'employer-years', 'employer-months')));
+// React to every way a value can change: typing, arrow spinner, autofill, paste.
+function watchPrev(names, fsId) {
+  names.forEach(n => {
+    const el = document.querySelector(`[name="${n}"]`);
+    ['input', 'change', 'keyup', 'blur'].forEach(ev =>
+      el.addEventListener(ev, () => syncPrev(fsId, names[0], names[1])));
+  });
+}
+watchPrev(['address-years', 'address-months'], 'prev-address');
+watchPrev(['employer-years', 'employer-months'], 'prev-employer');
 
 // Previous-address state list mirrors the main one.
 (function () {
