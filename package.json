@@ -4,6 +4,7 @@
   "private": true,
   "description": "AI DealCheck — AI car-deal analyzer for Russian-speaking US buyers.",
   "dependencies": {
-    "@vercel/blob": "^2.4.0"
+    "@vercel/blob": "^2.4.0",
+    "pdf-lib": "^1.17.1"
   }
 }
