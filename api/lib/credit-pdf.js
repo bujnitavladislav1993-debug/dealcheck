@@ -271,11 +271,9 @@ export async function fillCreditApp(data, opts = {}) {
     signatureKind = 'typed';
   }
 
-  if (signatureKind !== 'none') {
-    page2.drawText(`Electronically signed ${signedAt.toLocaleString('en-US')}`, {
-      x: SIG.x, y: SIG.y - 9, size: 5.5, font: helv, color: rgb(0.35, 0.35, 0.35),
-    });
-  }
+  // Nothing is printed under the signature either -- no "Electronically signed
+  // <date>" line. The page carries the signature and nothing else, so the form
+  // reads exactly like a wet-signed one.
 
   // No electronic signature certificate page is appended: Vlad wants the PDF
   // to be exactly the dealer's two-page form, nothing a lender hasn't seen
