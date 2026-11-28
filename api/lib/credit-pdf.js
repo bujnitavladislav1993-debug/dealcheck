@@ -12,13 +12,21 @@
 // signature is drawn as page content (not a form field), so it cannot be
 // edited away by filling the remaining fields.
 
-import fs from 'fs';
 import { PDFDocument, StandardFonts, rgb, PDFName, PDFBool } from 'pdf-lib';
+import { TEMPLATE_B64 } from '../assets/credit-app-template.b64.js';
 
-// Resolved relative to this module so it works both locally and inside the
-// Vercel function bundle. vercel.json's `includeFiles` keeps the template in
-// the bundle -- without it the file is traced away and this read throws.
-const TEMPLATE_PATH = new URL('../assets/credit-app-template.pdf', import.meta.url);
+// The template travels as a base64 module, not a file read at runtime.
+// Reading it from disk meant depending on where the bundler puts the asset and
+// on process.cwd() matching between a local run and the Vercel function -- and
+// the file can simply be traced out of the bundle. An import cannot be.
+// api/assets/credit-app-template.pdf stays in the repo as the source of truth;
+// regenerate the module from it after any change to the PDF.
+let templateBytes = null;
+
+function loadTemplate() {
+  if (!templateBytes) templateBytes = Buffer.from(TEMPLATE_B64, 'base64');
+  return templateBytes;
+}
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -189,7 +197,7 @@ export async function fillCreditApp(data, opts = {}) {
     _date: signedAt.toLocaleDateString('en-US'),
   });
 
-  const pdf = await PDFDocument.load(fs.readFileSync(TEMPLATE_PATH));
+  const pdf = await PDFDocument.load(loadTemplate());
   const form = pdf.getForm();
   const helv = await pdf.embedFont(StandardFonts.Helvetica);
   const helvBold = await pdf.embedFont(StandardFonts.HelveticaBold);

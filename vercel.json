@@ -3,7 +3,7 @@
   "functions": {
     "api/analyze.js":       { "maxDuration": 60 },
     "api/cron-followup.js": { "maxDuration": 60 },
-    "api/credit-app.js":    { "maxDuration": 30, "includeFiles": "api/assets/**" }
+    "api/credit-app.js":    { "maxDuration": 30 }
   },
   "crons": [
     {

@@ -1,4 +1,4 @@
-import { fillCreditApp } from './lib/credit-pdf.mjs';
+import { fillCreditApp } from './lib/credit-pdf.js';
 import { sendBrevoEmail } from './lib/brevo.js';
 
 // Receives a /apply submission, fills the real dealer Credit Application PDF,
@@ -80,6 +80,28 @@ async function rateLimited(ip) {
 }
 
 export default async function handler(req, res) {
+  // GET /api/credit-app?health=1 -- confirms the function loads, the PDF
+  // template made it into the bundle and the mail credentials are present.
+  // Reports presence only, never values.
+  if (req.method === 'GET' && req.query?.health) {
+    let template = 'unknown';
+    try {
+      await fillCreditApp({ 'first-name': 'Health', 'last-name': 'Check' }, { signedName: 'Health Check' });
+      template = 'ok';
+    } catch (e) {
+      template = 'FAILED: ' + e.message.slice(0, 300);
+    }
+    return res.status(200).json({
+      ok: true,
+      template,
+      brevoKey:  !!process.env.BREVO_API_KEY,
+      brevoFrom: !!process.env.BREVO_FROM_EMAIL,
+      notifyTo:  process.env.ADMIN_NOTIFY_EMAIL ? 'set' : 'default',
+      node:      process.version,
+      cwd:       process.cwd(),
+    });
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
