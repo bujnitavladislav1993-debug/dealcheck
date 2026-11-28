@@ -147,15 +147,19 @@ export default async function handler(req, res) {
   }
 
   // ── Fill the PDF ──────────────────────────────────────────────────────────
+  const signedAt    = new Date();
+  const userAgent   = String(req.headers['user-agent'] || '').slice(0, 200);
+  const consentSeen = String(consentText || '').slice(0, 2000);
+
   let pdf;
   try {
     pdf = await fillCreditApp(clean, {
       signaturePng: sigPng,
       signedName:   String(signedName).slice(0, 120),
-      consentText:  String(consentText || '').slice(0, 2000),
+      consentText:  consentSeen,
       ip,
-      userAgent:    String(req.headers['user-agent'] || '').slice(0, 200),
-      signedAt:     new Date(),
+      userAgent,
+      signedAt,
     });
     console.log('[credit-app] filled', pdf.filled.length, 'fields; signature:', pdf.signatureKind,
                 pdf.missing.length ? `; unmapped: ${pdf.missing.join(',')}` : '');
@@ -191,9 +195,18 @@ export default async function handler(req, res) {
       Fill in <strong>SELLER / STOCK NO / VIN / AMOUNT REQUESTED</strong> at the top before you submit it.
     </p>
     <div style="background:#f6f5f2;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#444">
-      Signed by <strong>${esc(signedName)}</strong> — ${esc(pdf.signatureKind === 'drawn' ? 'drawn signature' : 'typed name')},
-      ${esc(new Date().toLocaleString('en-US'))}${ip ? ` — IP ${esc(ip)}` : ''}.
-      Full audit trail is on the last page of the PDF.
+      <div style="font-weight:700;color:#111;margin-bottom:6px">Signature record</div>
+      <div>Signed by <strong>${esc(signedName)}</strong> — ${esc(pdf.signatureKind === 'drawn' ? 'drawn signature' : 'typed name')}</div>
+      <div>${esc(signedAt.toLocaleString('en-US'))} &nbsp;·&nbsp; ${esc(signedAt.toISOString())}</div>
+      <div>IP ${esc(ip || 'unavailable')}</div>
+      <div style="color:#777;margin-top:4px">${esc(userAgent || 'browser unavailable')}</div>
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;color:#0C447C">Consent they accepted</summary>
+        <div style="margin-top:6px;color:#555;font-size:11px;line-height:1.5">${esc(consentSeen) || '(not recorded)'}</div>
+      </details>
+      <div style="color:#777;margin-top:8px;font-size:11px">
+        Keep this e-mail — it is the audit trail for the signature. The PDF itself is just the dealer form.
+      </div>
     </div>
     <table style="border-collapse:collapse;width:100%">${rows}</table>
     <p style="margin:18px 0 0;font-size:11px;color:#999">

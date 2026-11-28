@@ -200,7 +200,6 @@ export async function fillCreditApp(data, opts = {}) {
   const pdf = await PDFDocument.load(loadTemplate());
   const form = pdf.getForm();
   const helv = await pdf.embedFont(StandardFonts.Helvetica);
-  const helvBold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const timesItalic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
 
   const filled = [];
@@ -278,63 +277,15 @@ export async function fillCreditApp(data, opts = {}) {
     });
   }
 
-  // ── Electronic signature certificate (appended page) ──────────────────────
-  const cert = pdf.addPage([612, 792]);
-  let y = 740;
-  const line = (text, { size = 9, font = helv, gap = 14, color = rgb(0.1, 0.1, 0.1) } = {}) => {
-    cert.drawText(text, { x: 54, y, size, font, color });
-    y -= gap;
-  };
-
-  line('ELECTRONIC SIGNATURE CERTIFICATE', { size: 13, font: helvBold, gap: 10 });
-  line('DealCheck LLC — Credit Application', { size: 9, color: rgb(0.4, 0.4, 0.4), gap: 24 });
-
-  const rows = [
-    ['Applicant', join([d['first-name'], d['middle-initial'], lastWithSuffix(d['last-name'], d['suffix'])], ' ')],
-    ['Typed legal name', s(opts.signedName)],
-    ['Signature method', signatureKind === 'drawn' ? 'Drawn on touchscreen / mouse' : signatureKind === 'typed' ? 'Typed legal name' : 'Not captured'],
-    ['Signed at (UTC)', signedAt.toISOString()],
-    ['Signed at (local)', signedAt.toLocaleString('en-US')],
-    ['Submitted from', s(opts.ip) || 'unavailable'],
-    ['Browser', s(opts.userAgent).slice(0, 78) || 'unavailable'],
-    ['Source', 'https://aidealcheck.com/apply'],
-    ['E-mail on file', s(d['email'])],
-    ['Cell phone on file', s(d['cell-phone'])],
-  ];
-  for (const [k, raw] of rows) {
-    const v = latin(raw);
-    if (!v) continue;
-    cert.drawText(k, { x: 54, y, size: 8, font: helvBold, color: rgb(0.3, 0.3, 0.3) });
-    cert.drawText(v, { x: 170, y, size: 8, font: helv, color: rgb(0, 0, 0) });
-    y -= 13;
-  }
-
-  y -= 12;
-  line('CONSENT ACCEPTED BY APPLICANT', { size: 9, font: helvBold, gap: 14 });
-
-  const consent = latin(opts.consentText) || '(consent text not recorded)';
-  for (const chunk of wrap(consent, 108)) {
-    cert.drawText(chunk, { x: 54, y, size: 7.5, font: helv, color: rgb(0.15, 0.15, 0.15) });
-    y -= 10;
-    if (y < 70) break;
-  }
+  // No electronic signature certificate page is appended: Vlad wants the PDF
+  // to be exactly the dealer's two-page form, nothing a lender hasn't seen
+  // before. The audit trail (signature method, timestamp, IP, browser and the
+  // exact consent accepted) is recorded in the notification e-mail instead, so
+  // it still exists -- it just isn't stapled to the document he forwards.
 
   // Appearances: without this some viewers (notably Preview.app) show blanks.
   try { form.updateFieldAppearances(helv); } catch (e) { /* non-fatal */ }
   pdf.catalog.getOrCreateAcroForm().dict.set(PDFName.of('NeedAppearances'), PDFBool.True);
 
   return { bytes: await pdf.save(), filled, missing, signatureKind };
-}
-
-/** Greedy word wrap to `width` characters. */
-function wrap(text, width) {
-  const words = s(text).split(/\s+/);
-  const lines = [];
-  let cur = '';
-  for (const w of words) {
-    if ((cur + ' ' + w).trim().length > width) { if (cur) lines.push(cur); cur = w; }
-    else cur = (cur + ' ' + w).trim();
-  }
-  if (cur) lines.push(cur);
-  return lines;
 }
